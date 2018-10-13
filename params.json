@@ -18,7 +18,7 @@
     "evaluation_params": {
         "type": "market_evaluate",
         "step": null, 
-        "epoch": 2 
+        "epoch": 20 
     },
     "fine_tune": false,
     "imagenet_pretrain": true,
