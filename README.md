@@ -39,9 +39,9 @@ cd ~/.local/bin
 ```
 
 ## Baselines
-backbone | imgSize | PCB | rank1  | map | aug. | batchsize |comments
- --- | --- | --- | --- | --- | --- | ---
-resnet-50 | 384 * 128 |1536/6 |0 | 0 |mirro | 32 * 2 |
+backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
+--- | --- | --- | --- | --- | --- | --- | ---
+resnet-50 | 384 * 128 |1536/6 |0 | 0 |mirro | 32 * 2 | 
  
 
 
