@@ -39,7 +39,7 @@ cd ~/.local/bin
 ```
 
 ## Baselines
-No. | backbone | imgSize | PCB | rank1  | map | augment | comment
+No. | backbone | imgSize | PCB | rank1  | map | augmentation | comments
 --- | --- | --- | --- | --- | --- | --- | ---
 1 | resnet-50 | 384 * 128 |1536/6 |0 | 0 |mirro | 
  
