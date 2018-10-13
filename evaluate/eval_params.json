@@ -1,0 +1,19 @@
+{
+    "img_h": 256,
+    "img_w": 128,
+    "batch_size": 32, 
+    "model_params": {
+        "model": "densenet_161",
+        "use_pcb": false,
+        "zhedong": false, 
+        "normalize_fc_layer": false,
+        "feature_dim": 256
+    },
+    "reranking": false
+    "parallels": [0],
+    "model_path": "YOUR_MODEL_PATH", 
+    "num_labels": 3, 
+    "evaluation_params": {
+        "val_set_json": "/world/data-c9/dl-data/54bcfc6c329af61034f7c2fc/5b120cd29af25e8eafb1cb27/15279095870070.4359166491139468_list.json"
+    }
+}
