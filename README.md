@@ -38,6 +38,14 @@ cd ~/.local/bin
 ./tensorboard --logdir=YOUR_SUB_WORKING_DIR --port=YOUR_PORT
 ```
 
+## Baselines
+No. | backbone | imgSize | PCB | rank1  | map | augment | comment
+--- | --- | --- | --- | --- | --- | --- | ---
+1 | resnet-50 | 384 * 128 |1536/6 |0 | 0 |mirro | 
+ 
+
+
+
 ## Parameters
 
 The params.json file contains the settings you need to run your model, here is a brief 
