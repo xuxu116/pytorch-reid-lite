@@ -43,8 +43,6 @@ backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
 resnet-50 | 384*128 |1536/6 |0.628266|0.346756|mirro | 32*2 | 
 resnet-50 | 384*128 |1536/6 |0.683492|0.411627|mirro | 32*2 |weight_decay from 4e-5 to 5e-4
-resnet-50 | 256*128 |0 |0.641924|0.395321|mirro | 64 | batchsize_32 is hard to converge
-
 
 
 ## Parameters
