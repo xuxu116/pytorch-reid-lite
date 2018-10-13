@@ -34,11 +34,13 @@ class ft_net(nn.Module):
         self.pcb_n_parts = pcb_n_parts
         self.training = is_training
         self.losses = {l for l in loss_dict.keys()}
+        self.dropout = nn.Dropout(p=0.5)
 
         # Build base network
         network_fn = nets_factory.network_fn[model_name]
         model_ft = network_fn(
-            pretrained=config.get("imagenet_pretrain", False)
+            pretrained=config.get("imagenet_pretrain", False),
+            last_conv_stride=config["model_params"].get("last_conv_stride", 1)
         )
         self.model = model_ft  # stem network
 
@@ -62,6 +64,7 @@ class ft_net(nn.Module):
 
     def forward(self, x, labels=None):
         embedding = self.model(x)
+        embedding = self.dropout(embedding)
         if self.pcb_n_parts > 0:
             return self.Pcb(embedding, labels)
 

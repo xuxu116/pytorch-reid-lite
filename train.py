@@ -126,7 +126,7 @@ def _run_train_loop(data_loader, config, net,
             if epoch > 0 and \
                     epoch % config["evaluation_params"]["epoch"] == 0:
                 model_utils.save_and_evaluate(net, config, evaluate_func)
-    model_utils.save_and_evaluate(net, config, evaluate_func)
+        model_utils.save_and_evaluate(net, config, evaluate_func)
 
 
 def train(config, data_loader):

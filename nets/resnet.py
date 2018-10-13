@@ -96,7 +96,7 @@ class Bottleneck(nn.Module):
 class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=1000, ibn_a=False,
-                 ibn_b=False):
+                 ibn_b=False, last_conv_stride=1):
         self.inplanes = 64
         self.ibn_a = ibn_a
         self.ibn_b = ibn_b
@@ -110,7 +110,8 @@ class ResNet(nn.Module):
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.layer4 = self._make_layer(block, 512, layers[3],
+                                       stride=last_conv_stride)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
