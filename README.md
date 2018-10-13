@@ -44,6 +44,14 @@ backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 resnet-50 | 384*128 |1536/6 |0.628266|0.346756|mirro | 32*2 | 
 resnet-50 | 384*128 |1536/6 |0.683492|0.411627|mirro | 32*2 |weight_decay from 4e-5 to 5e-4
 
+For following settings
+- `PCB branchs = 6`
+- `batch_size = 64`
+- image size `h x w = 384 x 128`
+
+GPU memory usage:
+9529MiB for `last_conv_stride=1`
+7155MiB for `last_conv_stride=2`
 
 ## Parameters
 
