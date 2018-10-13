@@ -40,7 +40,7 @@
     "num_preprocess_workers": 4,
     "optimizer": "sgd",
     "parallels": [
-        1
+        0
     ],
     "pretrain_snapshot": "",
     "tri_loss_params": {

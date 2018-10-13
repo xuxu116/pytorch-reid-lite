@@ -1,7 +1,19 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn import init
 
+
+def weights_init_kaiming(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+    elif classname.find('Linear') != -1:
+        init.kaiming_normal_(m.weight.data, a=0, mode='fan_out')
+        init.constant_(m.bias.data, 0.0)
+    elif classname.find('BatchNorm1d') != -1:
+        init.normal_(m.weight.data, 1.0, 0.02)
+        init.constant_(m.bias.data, 0.0)
 
 class Pcb(nn.Module):
     def __init__(self, config, num_ftrs, feature_dim, n_parts,
@@ -14,9 +26,11 @@ class Pcb(nn.Module):
         feature_dim = feature_dim / n_parts
         self.branch = nn.ModuleList(
             [nn.Sequential(nn.Linear(num_ftrs, feature_dim),
+                           nn.BatchNorm1d(feature_dim),
                            nn.Dropout(p=0.5))
              for i in range(self.num_part)]
         )
+        self.branch.apply(weights_init_kaiming)
 
         if is_training:
             self.classifier = nn.ModuleList(
