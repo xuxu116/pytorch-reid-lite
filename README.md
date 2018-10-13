@@ -43,6 +43,9 @@ backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
 resnet-50 | 384*128 |1536/6 |0.628266|0.346756|mirro | 32*2 | 
 resnet-50 | 384*128 |1536/6 |0.683492|0.411627|mirro | 32*2 |weight_decay from 4e-5 to 5e-4
+resnet-50 | 384*128 |1536/6 |0.837886|0.620621|mirro | 32*2 |add dropout before PCB
+resnet-50 | 384*128 |1536/6 |0.856888|0.640600|mirro | 32*2 |last_conv_stride=1
+resnet-50 | 384*128 |1536/6 |0.920724|0.755717|mirro | 32*2 |add BN to pcb stipe
 
 For following settings
 - `PCB branchs = 6`
