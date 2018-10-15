@@ -30,7 +30,7 @@ class Pcb(nn.Module):
                            nn.Dropout(p=0.5))
              for i in range(self.num_part)]
         )
-        self.branch.apply(weights_init_kaiming)
+        #self.branch.apply(weights_init_kaiming)
 
         if is_training:
             self.classifier = nn.ModuleList(
