@@ -3,6 +3,12 @@
 This codebase is for training/deploying models in pytorch (onnx), 
 currently it provides basic protocols for model training, evaluation and deploying.
 
+## What's New
+
+Support offline evaluation
+```
+python evaluator.py eval_params.json 
+```
 
 ## Install Dependency
 
