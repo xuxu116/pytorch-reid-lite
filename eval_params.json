@@ -1,0 +1,15 @@
+{
+    "batch_size": 512,
+    "gpus": [3],
+    "img_h": 384,
+    "img_w": 128,
+    "model_params": {
+        "feature_dim": 1536,
+        "model": "resnet_50",
+        "pcb_n_parts": 6,
+        "last_conv_stride": 1
+    },
+    "model_path": "/world/data-gpu-57/xulie/pytorch-output/market_pcb_1536_test_kaimin/model_best.pth", 
+    "benchmark_type": "market_evaluate",
+    "result_log_file": "result.log"
+}
