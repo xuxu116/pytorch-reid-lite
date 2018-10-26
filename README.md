@@ -5,10 +5,7 @@ currently it provides basic protocols for model training, evaluation and deployi
 
 ## What's New
 
-Support offline evaluation
-```
-python evaluator.py eval_params.json 
-```
+Support GAN to generate market-1501 data
 
 ## Install Dependency
 
@@ -35,6 +32,11 @@ python train.py --operation start_train --config_path params.json --sub_working_
 You can enable on-the-fly automatic evaluation by setting "type" under "evaluation_params" key in params.json (default is "None"). If set, after each epoch the code will run your evaluation, and only saves the best-performing model.
 
 The code currently supports "market\_evaluate" for person-reid and "classification\_evaluate" for image classification, but it is easy to extend this to support other evalutiaons (like LFW). All you need to do is create a new file - say "lfw\_evaluate.py" in the evaluate folder, and expose a run\_eval method which takes in your training config and returns your evaluation result. See evaluate/market\_evalute.py for an example.
+
+### Offline evaluation
+```
+python evaluator.py eval_params.json 
+```
 
 ### Tensorboard visualization
 
