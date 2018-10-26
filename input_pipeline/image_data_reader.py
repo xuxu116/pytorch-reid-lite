@@ -7,11 +7,12 @@ import PIL
 
 import torch
 from folder import ImageFolder
+from folder_with_feature import ImageFolderWithFeature
 import torchvision.transforms as transforms
 from samplers import TripletSampler
 
 
-def init_data_loader(config, num_processes=4):
+def init_data_loader(config, num_processes=4, path_feature=None):
     if os.path.exists(os.path.join(config["batches_dir"],
                                    "class_mapping.json")):
         import json
@@ -29,7 +30,13 @@ def init_data_loader(config, num_processes=4):
     logging.info("Initializing data loader, this might take a while.....")
     all_transforms = _init_transforms(config["img_h"], config["img_w"],
                                       config["data_augmentation"])
-    train_dataset = ImageFolder(config["batches_dir"],
+
+    if path_feature is not None:
+        train_dataset = ImageFolderWithFeature(config["batches_dir"],
+                                                path_feature,
+                                                transform=all_transforms)
+    else:
+        train_dataset = ImageFolder(config["batches_dir"],
                                 transform=all_transforms)
 
     # init data loader
@@ -46,7 +53,7 @@ def init_data_loader(config, num_processes=4):
         if class_balanced_sampling else None
     data_loader = torch.utils.data.DataLoader(
         train_dataset,
-        shuffle=shuffle,
+        shuffle=True,
         batch_size=batch_size,
         num_workers=num_processes,
         batch_sampler=sampler
@@ -78,17 +85,21 @@ def _init_transforms(img_h, img_w, aug_params):
         degrees = aug_params["rotation"]
         transforms_list.append(transforms.RandomRotation(degrees))
 
-    # Color jiterring
-    if aug_params.get("colour_jiterring", False):
-        transforms_list.append(transforms.ColorJitter())
-
     # Random erasing
     if aug_params.get("random_erasing", False):
         transforms_list.append(RandomErasing())
 
+    # Color jiterring
+    if aug_params.get("colour_jiterring", False):
+        transforms_list.append(transforms.ColorJitter(0.1,0.1,0.1))
+
+    if aug_params.get("gaussian_noise", True):
+        transforms_list.append(AddGaussianNoise())
     # Convert the images to tensors and perform normalization
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+    #normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+    #                                 std=[0.229, 0.224, 0.225])
+    normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5],
+                                     std=[0.5, 0.5, 0.5])
     transforms_list.append(transforms.ToTensor())
     transforms_list.append(normalize)
 
@@ -150,5 +161,22 @@ class RandomErasing(object):
                 return img
 
         img = np.transpose(img, [1, 2, 0])
+        img = PIL.Image.fromarray(img)
+        return img
+
+
+class AddGaussianNoise(object):
+    def __call__(self, img):
+        std = random.uniform(0, 1.0)
+        if std > 0.5:
+            return img
+
+        # Convert to ndarray
+        img = np.asarray(img).copy()
+        noise = np.random.normal(size=img.shape, scale=std).astype(np.uint8)
+        img += noise
+        img = np.clip(img, 0, 255)
+
+        # Convert back to PIL image
         img = PIL.Image.fromarray(img)
         return img

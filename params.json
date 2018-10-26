@@ -2,16 +2,17 @@
     "batch_sampling_params": {
         "K": 4,
         "P": 32,
-        "batch_size": 64,
+        "batch_size": 128,
         "class_balanced": false
     },
     "batches_dir": "/world/data-gpu-94/sysu-reid/market_dataset",
     "data_augmentation": {
-        "colour_jitering": false,
+        "colour_jitering": true,
         "crop_h": 0,
         "crop_w": 0,
-        "mirror": true,
+        "mirror": false,
         "random_erasing": false,
+        "gaussian_noise": true,
         "rotation": 0
     },
     "epochs": 60,
@@ -35,12 +36,11 @@
         "model": "resnet_50",
         "pcb_n_parts": 6,
         "last_conv_stride": 1
-
     },
     "num_preprocess_workers": 4,
     "optimizer": "sgd",
     "parallels": [
-        0
+        5
     ],
     "pretrain_snapshot": "",
     "tri_loss_params": {
