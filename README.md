@@ -64,6 +64,13 @@ GPU memory usage:
 - 9529MiB for `last_conv_stride=1` (170 example/sec)
 - 7155MiB for `last_conv_stride=2` (130 example/sec)
 
+backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
+--- | --- | --- | --- | --- | --- | --- | ---
+resnet-50 | 256*128 |256*1 | | |mirro, RE, RG, RO, CJ | 64*1 | last_stride=1
+
+
+
+
 ## Parameters
 
 The params.json file contains the settings you need to run your model, here is a brief 
