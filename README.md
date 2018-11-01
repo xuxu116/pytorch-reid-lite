@@ -61,8 +61,8 @@ For following settings
 - image size `h x w = 384 x 128`
 
 GPU memory usage:
-- 9529MiB for `last_conv_stride=1` (170 example/sec)
-- 7155MiB for `last_conv_stride=2` (130 example/sec)
+- 9529MiB for `last_conv_stride=1` (130 example/sec)
+- 7155MiB for `last_conv_stride=2` (170 example/sec)
 
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
