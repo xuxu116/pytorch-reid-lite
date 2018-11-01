@@ -66,8 +66,15 @@ GPU memory usage:
 
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
-resnet-50 | 256*128 |256*1 | | |mirro, RE, RG, RO, CJ | 64*1 | last_stride=1
+resnet-50 | 256*128 |256*1 | | |mirro | 128*1 | last_stride=1
 
+For following settings
+- `PCB branchs = 0`
+- `batch_size = 128 # 64 causes divergence`
+- image size `h x w = 256 x 128`
+
+GPU memory usage:
+- 10343MiB for `last_conv_stride=1` (215 example/sec)
 
 
 
