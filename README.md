@@ -49,7 +49,7 @@ cd ~/.local/bin
 ## Baselines
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
-resnet-50 | 384*128 |1536/6 |0.628266|0.346756|mirro | 64*1 | 
+resnet-50 | 384*128 |1536/6 |0.628266|0.346756|mirro | 64*1 |classifier no bias
 resnet-50 | 384*128 |1536/6 |0.683492|0.411627|mirro | 64*1 |weight_decay from 4e-5 to 5e-4
 resnet-50 | 384*128 |1536/6 |0.837886|0.620621|mirro | 64*1 |add dropout before PCB
 resnet-50 | 384*128 |1536/6 |0.856888|0.640600|mirro | 64*1 |last_conv_stride=1
@@ -66,7 +66,9 @@ GPU memory usage:
 
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
-resnet-50 | 256*128 |256*1 | | |mirro | 128*1 | last_stride=1
+resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | last_stride=1
+resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | add BN, Dropout after feature layer
+resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | cls no bias
 
 For following settings
 - `PCB branchs = 0`
