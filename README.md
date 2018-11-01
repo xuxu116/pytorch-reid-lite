@@ -67,8 +67,8 @@ GPU memory usage:
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
 resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | last_stride=1
-resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | add BN, Dropout after feature layer
-resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | cls no bias
+resnet-50 | 256*128 |256*1 |0.869062|0.685709|mirro | 128*1 | add BN, Dropout after feature layer
+resnet-50 | 256*128 |256*1 |0.867874|0.685979|mirro | 128*1 | cls no bias
 
 For following settings
 - `PCB branchs = 0`
