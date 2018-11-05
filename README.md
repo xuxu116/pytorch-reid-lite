@@ -69,8 +69,9 @@ backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | last_stride=1
 resnet-50 | 256*128 |256*1 |0.869062|0.685709|mirro | 128*1 | add BN, Dropout after feature layer
 resnet-50 | 256*128 |256*1 |0.867874|0.685979|mirro | 128*1 | cls no bias (not use)
-resnet-50 | 256*128 |256*1 |0.887173|0.713067|mirro | 32*1 | add BN, Dropout after feature layer
-
+resnet-50 | 256*128 |256*1 |0.887767|0.728789|mirro | 32*1 | add BN, Dropout after feature layer
+resnet-50 | 256*128 |256*1 |0.849169|0.673918|mirro | 32*1 | adam, epoch 20 lr decay
+resnet-50 | 256*128 |256*1 |0.864014|0.679649|mirro | 32*1 | adam, epoch 40 lr decay
 
 For following settings
 - `PCB branchs = 0`
