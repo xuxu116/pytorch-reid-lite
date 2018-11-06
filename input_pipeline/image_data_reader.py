@@ -96,10 +96,13 @@ def _init_transforms(img_h, img_w, aug_params):
     if aug_params.get("gaussian_noise", True):
         transforms_list.append(AddGaussianNoise())
     # Convert the images to tensors and perform normalization
-    #normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-    #                                 std=[0.229, 0.224, 0.225])
-    normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5],
-                                     std=[0.5, 0.5, 0.5])
+
+    if aug_params.get("imagenet_static", False):
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                        std=[0.229, 0.224, 0.225])
+    else:
+        normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5],
+                                        std=[0.5, 0.5, 0.5])
     transforms_list.append(transforms.ToTensor())
     transforms_list.append(normalize)
 

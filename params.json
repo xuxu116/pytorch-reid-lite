@@ -13,6 +13,7 @@
         "mirror": false,
         "random_erasing": false,
         "gaussian_noise": true,
+        "imagenet_static": false,
         "rotation": 0
     },
     "epochs": 60,
@@ -23,7 +24,7 @@
     },
     "fine_tune": false,
     "imagenet_pretrain": true,
-    "img_h": 384,
+    "img_h": 256,
     "img_w": 128,
     "lr": {
         "base_lr": 0.01,
@@ -32,9 +33,9 @@
         "fc_lr": 0.1
     },
     "model_params": {
-        "feature_dim": 1536,
+        "feature_dim": 256,
         "model": "resnet_50",
-        "pcb_n_parts": 6,
+        "pcb_n_parts": 0,
         "last_conv_stride": 1
     },
     "num_preprocess_workers": 4,
