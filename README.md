@@ -72,6 +72,7 @@ resnet-50 | 256*128 |256*1 |0.867874|0.685979|mirro | 128*1 | cls no bias (not u
 resnet-50 | 256*128 |256*1 |0.887767|0.728789|mirro | 32*1 | add BN, Dropout after feature layer
 resnet-50 | 256*128 |256*1 |0.849169|0.673918|mirro | 32*1 | adam, epoch 20 lr decay
 resnet-50 | 256*128 |256*1 |0.864014|0.679649|mirro | 32*1 | adam, epoch 40 lr decay
+resnet-50 | 256*128 |256*1 |0.867874|0.704566|mirro | 32*1 | global_pool 2048d as feature
 
 For following settings
 - `PCB branchs = 0`
