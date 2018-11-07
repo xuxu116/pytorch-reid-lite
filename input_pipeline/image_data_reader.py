@@ -53,7 +53,7 @@ def init_data_loader(config, num_processes=4, path_feature=None):
         if class_balanced_sampling else None
     data_loader = torch.utils.data.DataLoader(
         train_dataset,
-        shuffle=True,
+        shuffle=shuffle,
         batch_size=batch_size,
         num_workers=num_processes,
         batch_sampler=sampler
