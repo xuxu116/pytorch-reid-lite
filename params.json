@@ -2,7 +2,7 @@
     "batch_sampling_params": {
         "K": 4,
         "P": 32,
-        "batch_size": 128,
+        "batch_size": 64,
         "class_balanced": false
     },
     "batches_dir": "/world/data-gpu-94/sysu-reid/market_dataset",
@@ -36,12 +36,13 @@
         "feature_dim": 256,
         "model": "resnet_50",
         "pcb_n_parts": 0,
-        "last_conv_stride": 1
+        "last_conv_stride": 1,
+        "feature_mask": true
     },
     "num_preprocess_workers": 4,
     "optimizer": "sgd",
     "parallels": [
-        5
+        2
     ],
     "pretrain_snapshot": "",
     "tri_loss_params": {

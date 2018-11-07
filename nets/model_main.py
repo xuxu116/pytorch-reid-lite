@@ -35,6 +35,7 @@ class ft_net(nn.Module):
         self.training = is_training
         self.losses = {l for l in loss_dict.keys()}
         self.dropout = nn.Dropout(p=0.5)
+        self.feature_mask=config["model_params"].get("feature_mask", False)
 
         # Build base network
         network_fn = nets_factory.network_fn[model_name]
@@ -48,15 +49,27 @@ class ft_net(nn.Module):
         num_ftrs = model_ft.num_ftrs
         if pcb_n_parts > 0:
             self.Pcb = layers.Pcb(config, num_ftrs, feature_dim,
-                                  pcb_n_parts, is_training=is_training)
+                                  pcb_n_parts, is_training=is_training,
+                                  feature_mask=self.feature_mask)
         else:
-            self.fc = nn.Linear(num_ftrs, feature_dim)
+            self.fc = nn.Sequential(
+                nn.Linear(num_ftrs, feature_dim),
+                nn.BatchNorm1d(feature_dim),
+                nn.Dropout(p=0.5))
+            #self.fc = nn.Linear(num_ftrs, feature_dim)
+            if self.feature_mask:
+                self.mask = nn.Sequential(
+                    nn.Linear(num_ftrs, feature_dim),
+                    nn.BatchNorm1d(feature_dim),
+                    nn.Dropout(p=0.5),
+                    nn.Sigmoid())
+
             self.fc.apply(weights_init_kaiming)
 
         # Classification layer
         if self.training and pcb_n_parts == 0:
             self.classifier = None
-            if "xent_loss" in self.losses:
+            if "xent_loss" in self.losses or True:
                 self.classifier = nn.Linear(
                     config["model_params"]["feature_dim"],
                     config["num_labels"])
@@ -72,8 +85,11 @@ class ft_net(nn.Module):
         embedding = F.avg_pool2d(embedding, kernel_size=embedding.size()[2:])
 
         # embedding layer
-        embedding = embedding.view(embedding.size(0), -1)
-        embedding = self.fc(embedding)
+        embedding_r = embedding.view(embedding.size(0), -1)
+        embedding = self.fc(embedding_r)
+        if self.feature_mask:
+            mask = self.mask(embedding_r)
+            embedding = embedding * mask
 
         # Return only the embedding in model deploy
         if self.losses == {"tri_loss"} or (not self.training):

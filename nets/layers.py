@@ -17,10 +17,11 @@ def weights_init_kaiming(m):
 
 class Pcb(nn.Module):
     def __init__(self, config, num_ftrs, feature_dim, n_parts,
-                 is_training=True, **kwargs):
+                 is_training=True, feature_mask=False, **kwargs):
         super(Pcb, self).__init__()
         # args
         self.training = is_training
+        self.feature_mask = feature_mask
         self.config = config
         self.num_part = n_parts
         feature_dim = feature_dim / n_parts
@@ -30,6 +31,14 @@ class Pcb(nn.Module):
                            nn.Dropout(p=0.5))
              for i in range(self.num_part)]
         )
+        if self.feature_mask:
+            self.mask = nn.ModuleList(
+                [nn.Sequential(nn.Linear(num_ftrs, feature_dim),
+                            nn.BatchNorm1d(feature_dim),
+                            nn.Dropout(p=0.5),
+                            nn.Sigmoid())
+                for i in range(self.num_part)]
+            )
         #self.branch.apply(weights_init_kaiming)
 
         if is_training:
@@ -44,8 +53,11 @@ class Pcb(nn.Module):
         y_split = []
         for i in range(self.num_part):
             x_temp = F.avg_pool2d(x_split[i], kernel_size=x_split[i].size()[2:])
-            x_temp = x_temp.view(x_temp.size(0), -1)
-            x_temp = self.branch[i](x_temp)
+            x_temp_r = x_temp.view(x_temp.size(0), -1)
+            x_temp = self.branch[i](x_temp_r)
+            if self.feature_mask:
+                mask = self.mask[i](x_temp_r)
+                x_temp = x_temp * mask
             if self.training:
                 x_global.append(x_temp)
                 y_split.append(self.classifier[i](x_temp))
