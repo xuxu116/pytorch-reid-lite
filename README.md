@@ -6,6 +6,7 @@ currently it provides basic protocols for model training, evaluation and deployi
 ## What's New
 
 Support GAN to generate market-1501 data
+Add random crop
 
 ## Install Dependency
 
