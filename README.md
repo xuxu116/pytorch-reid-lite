@@ -72,6 +72,7 @@ resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | last_stride=1
 resnet-50 | 256*128 |256*1 |0.869062|0.685709|mirro | 128*1 | add BN, Dropout after feature layer
 resnet-50 | 256*128 |256*1 |0.867874|0.685979|mirro | 128*1 | cls no bias (not use)
 resnet-50 | 256*128 |256*1 |0.893112|0.740011|mirro | 32*1 | add BN, Dropout after feature layer
+resnet-50 | 256*128 |256*1 |0.896378|0.745520|mirro,RE | 32*1 | 120 epoch, decay per 40
 resnet-50 | 256*128 |256*1 |0.849169|0.673918|mirro | 32*1 | adam, epoch 20 lr decay
 resnet-50 | 256*128 |256*1 |0.864014|0.679649|mirro | 32*1 | adam, epoch 40 lr decay
 resnet-50 | 256*128 |256*1 |0.867874|0.704566|mirro | 32*1 | global_pool 2048d as feature
