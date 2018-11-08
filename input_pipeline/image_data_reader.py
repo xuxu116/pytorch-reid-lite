@@ -76,6 +76,10 @@ def _init_transforms(img_h, img_w, aug_params):
     # Resize only
     transforms_list.append(transforms.Resize((img_h, img_w)))
 
+    # random crop
+    if aug_params.get("crop_h", 0) > 0 and aug_params.get("crop_w", 0) > 0:
+        transforms_list.append(transforms.RandomCrop((aug_params["crop_h"],
+                                                      aug_params["crop_w"])))
     # Randomly flip the image horizontally.
     if aug_params["mirror"]:
         transforms_list.append(transforms.RandomHorizontalFlip())

@@ -148,8 +148,13 @@ def run_eval(config):
         batch_size = model.batch_size
     else:
         model = config["online_net"]
-        input_w = config["img_w"]
-        input_h = config["img_h"]
+        aug_params = config["data_augmentation"]
+        if aug_params.get("crop_h", 0) > 0 and aug_params.get("crop_w", 0) > 0:
+            input_w = aug_params["crop_w"]
+            input_h = aug_params["crop_h"]
+        else:
+            input_w = config["img_w"]
+            input_h = config["img_h"]
         batch_size = config["batch_size"]
 
     # configure data_loader
