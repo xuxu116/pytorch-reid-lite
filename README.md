@@ -55,6 +55,8 @@ resnet-50 | 384*128 |1536/6 |0.683492|0.411627|mirro | 64*1 |weight_decay from 4
 resnet-50 | 384*128 |1536/6 |0.837886|0.620621|mirro | 64*1 |add dropout before PCB
 resnet-50 | 384*128 |1536/6 |0.856888|0.640600|mirro | 64*1 |last_conv_stride=1
 resnet-50 | 384*128 |1536/6 |0.920724|0.755717|mirro | 64*1 |add BN to pcb stripe
+resnet-50 | 384*128 |1536/6 |0.921318|0.765050|mirro,RE | 64*1 |add BN to pcb stripe
+resnet-50 | 384*128 |1536/6 |0.930523|0.783172|mirro,RE | 64*1 |change hue
 resnet-50 | 384*128 |1536/6 |0.920724|0.768056|mirro | 32*1 |120 epoch, decay per 40, hue
 resnet-50 | 256*128 |1024/4 |0.907957|0.731270|mirro | 32*1 |120 epoch, decay per 40
 resnet-50 | 256*128 |1024/4 |0.907957|0.750186|mirro,RE | 32*1 |120 epoch, decay per 40
