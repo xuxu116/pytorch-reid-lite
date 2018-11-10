@@ -44,7 +44,7 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
     loss.backward()
     optimizer.step()
 
-    log_step = 10 if config.get("model_parallel", False) else 10
+    log_step = 50 if config.get("model_parallel", False) else 50
     if step > 0 and step % log_step == 0:
         step_finished_time = time.time()
         gpu_time = float(step_finished_time - io_finished_time)

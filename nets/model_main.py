@@ -87,6 +87,7 @@ class ft_net(nn.Module):
         # embedding layer
         embedding_r = embedding.view(embedding.size(0), -1)
         embedding = self.fc(embedding_r)
+        embedding = embedding_r
         if self.feature_mask:
             mask = self.mask(embedding_r)
             embedding = embedding * mask
