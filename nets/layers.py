@@ -2,6 +2,66 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import init
+from torch.nn import Parameter
+
+
+class MarginInnerProduct(nn.Module):
+    def __init__(self, config, in_units, out_units=-1, **kwargs):
+        super(MarginInnerProduct, self).__init__()
+        #  args
+        self.in_units = in_units
+        self.out_units = config["num_labels"] if out_units == -1 else out_units
+        self.config = config
+
+        #  margin type
+        self.margin = config["asoftmax_params"].get("margin", [0.35])
+        self.s = config["asoftmax_params"].get("scale", 30.0)
+
+        #  training parameter
+        self.weight = Parameter(torch.Tensor(self.in_units, self.out_units),
+                                requires_grad=True)
+        self.weight.data.uniform_(-1, 1).renorm_(2, 1, 1e-5).mul_(1e5)
+
+        self.step = config["asoftmax_params"].get("step", 30000)
+
+    def forward(self, x, labels):
+        w = self.weight
+
+        x_norm = x.pow(2).sum(1).pow(0.5)
+        w_norm = w.pow(2).sum(0).pow(0.5)
+        x_mean = x_norm.mean()
+        w_mean = w_norm.mean()
+
+        # compute cosine theta
+        cos_theta = x.mm(w) / x_norm.view(-1, 1) / w_norm.view(1, -1)
+        cos_theta = cos_theta.clamp(-1, 1)
+
+        current_idx = min(int(self.config["global_step"] / self.step),
+            len(self.margin) - 1)
+        current_margin = self.margin[current_idx]
+        if self.s == 0:
+            cos_theta_margin = ((1 + current_margin) * cos_theta - current_margin) * x_norm.view(-1,1)
+        else:
+            cos_theta_margin = cos_theta - current_margin
+
+        # get ground truth indices
+        target = labels.view(-1, 1)  # size = (B, 1)
+        index = cos_theta.data * 0.0  # size = (B, Classnum)
+        index.requires_grad = False
+
+        index.scatter_(1, target.data.view(-1, 1), 1)
+        index = index.byte()
+        if self.s == 0:
+            output = x.mm(w) / w_norm
+            output[index] -= output[index]
+            output[index] += cos_theta_margin[index]
+        else: 
+            output = cos_theta * 1.0
+            output[index] -= cos_theta[index]
+            output[index] += cos_theta_margin[index]
+            output *= self.s  # scale up in order to make softmax work
+
+        return output
 
 
 def weights_init_kaiming(m):
@@ -42,10 +102,20 @@ class Pcb(nn.Module):
         #self.branch.apply(weights_init_kaiming)
 
         if is_training:
-            self.classifier = nn.ModuleList(
-                [nn.Linear(feature_dim, config["num_labels"])
-                 for i in range(self.num_part)]
-            )
+            if config["asoftmax_params"]["margin"] == 0:
+                self.classifier = nn.ModuleList(
+                    [nn.Linear(feature_dim, config["num_labels"])
+                     for i in range(self.num_part)]
+                )
+            else:
+                import logging
+                logging.info("Using angle loss:%s" %
+                            config["asoftmax_params"])
+                                             
+                self.classifier = nn.ModuleList(
+                        [MarginInnerProduct(config, feature_dim)
+                        for i in range(self.num_part)]
+                        )
 
     def forward(self, x, labels):
         x_split = torch.chunk(x, self.num_part, 2)
@@ -60,7 +130,10 @@ class Pcb(nn.Module):
                 x_temp = x_temp * mask
             if self.training:
                 x_global.append(x_temp)
-                y_split.append(self.classifier[i](x_temp))
+                if self.config["asoftmax_params"]["margin"] == 0:  
+                    y_split.append(self.classifier[i](x_temp))
+                else:
+                    y_split.append(self.classifier[i](x_temp, labels))
             else:
                 y_split.append(x_temp)
 

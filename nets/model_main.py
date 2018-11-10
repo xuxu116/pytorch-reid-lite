@@ -70,10 +70,18 @@ class ft_net(nn.Module):
         if self.training and pcb_n_parts == 0:
             self.classifier = None
             if "xent_loss" in self.losses or True:
-                self.classifier = nn.Linear(
-                    config["model_params"]["feature_dim"],
-                    config["num_labels"])
-                self.classifier.apply(weights_init_classifier)
+                if config["asoftmax_params"]["margin"] == 0:
+                    self.classifier = nn.Linear(
+                        config["model_params"]["feature_dim"],
+                        config["num_labels"])
+                    self.classifier.apply(weights_init_classifier)
+                else:
+                    import logging
+                    logging.info("Using angle loss:%s" %
+                                config["asoftmax_params"])
+                    self.classifier = layers.MarginInnerProduct(config,
+                            config["model_params"]["feature_dim"])
+
 
     def forward(self, x, labels=None):
         embedding = self.model(x)
@@ -87,7 +95,7 @@ class ft_net(nn.Module):
         # embedding layer
         embedding_r = embedding.view(embedding.size(0), -1)
         embedding = self.fc(embedding_r)
-        embedding = embedding_r
+        #embedding = embedding_r
         if self.feature_mask:
             mask = self.mask(embedding_r)
             embedding = embedding * mask
@@ -100,4 +108,7 @@ class ft_net(nn.Module):
             return embedding, self.classifier(embedding)
         else:
             # Otherwise return only the logits
-            return self.classifier(embedding)
+            if self.config["asoftmax_params"]["margin"] == 0:
+                return self.classifier(embedding)
+            else:
+                return self.classifier(embedding, labels)

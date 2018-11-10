@@ -1,22 +1,27 @@
 {
+    "asoftmax_params": {
+        "margin": [0.2],
+        "step": 400,
+        "scale": 0
+    },
     "batch_sampling_params": {
         "K": 4,
         "P": 32,
-        "batch_size": 64,
+        "batch_size": 32,
         "class_balanced": false
     },
     "batches_dir": "/world/data-gpu-94/sysu-reid/market_dataset",
     "data_augmentation": {
         "colour_jitering": true,
-        "crop_h": 0,
-        "crop_w": 0,
+        "crop_h": 256,
+        "crop_w": 128,
         "mirror": false,
         "random_erasing": false,
         "gaussian_noise": true,
         "imagenet_static": false,
         "rotation": 0
     },
-    "epochs": 60,
+    "epochs": 120,
     "evaluation_params": {
         "type": "market_evaluate",
         "step": null, 
@@ -24,8 +29,8 @@
     },
     "fine_tune": false,
     "imagenet_pretrain": true,
-    "img_h": 256,
-    "img_w": 128,
+    "img_h": 288,
+    "img_w": 144,
     "lr": {
         "base_lr": 0.01,
         "decay_gamma": 0.1,
@@ -42,9 +47,9 @@
     "num_preprocess_workers": 4,
     "optimizer": "sgd",
     "parallels": [
-        2
+        0
     ],
-    "pretrain_snapshot": "",
+    "pretrain_snapshot": "/world/data-gpu-57/xulie/pytorch-output/market_256_re_crop_mask/model_best.pth",
     "tri_loss_params": {
         "margin": 0,
         "use_adaptive_weight": true,
