@@ -56,6 +56,8 @@ resnet-50 | 384*128 |1536/6 |0.837886|0.620621|mirro | 64*1 |add dropout before 
 resnet-50 | 384*128 |1536/6 |0.856888|0.640600|mirro | 64*1 |last_conv_stride=1
 resnet-50 | 384*128 |1536/6 |0.920724|0.755717|mirro | 64*1 |add BN to pcb stripe
 resnet-50 | 384*128 |1536/6 |0.921318|0.765050|mirro,RE | 64*1 |add BN to pcb stripe
+resnet-50 | 384*128 |1536/6 |0.918349|0.768286|mirro,RE | 64*1 |add global branch
+resnet-50 | 384*128 |1536/6 |0.920724|0.771841|mirro,RE | 64*1 |global branch m=0.1
 resnet-50 | 384*128 |1536/6 |0.920428|0.775502|mirro,RE | 64*1 |mask@global branch
 resnet-50 | 384*128 |1536/6 |0.930523|0.783172|mirro,RE | 64*1 |change hue
 resnet-50 | 384*128 |1536/6 |0.920724|0.768056|mirro | 32*1 |120 epoch, decay per 40, hue
@@ -78,8 +80,9 @@ resnet-50 | 256*128 |256*1 |0.869062|0.685709|mirro | 128*1 | add BN, Dropout af
 resnet-50 | 256*128 |256*1 |0.867874|0.685979|mirro | 128*1 | cls no bias (not use)
 resnet-50 | 256*128 |256*1 |0.893112|0.740011|mirro | 32*1 | add BN, Dropout after feature layer
 resnet-50 | 256*128 |256*1 |0.898753|0.749818|mirro,RE | 32*1 | 120 epoch, decay per 40
+resnet-50 | 256*128 |256*1 |0.906176|0.761487|mirro,RE | 32*1 | warm-up before 20 epoch
 resnet-50 | 256*128 |256*1 |0.906473|0.774181|mirro,RE | 32*1 | Add feature mask
-resnet-50 | 256*128 |256*1 |0.914786|0.788952|mirro,RE | 32*1 | Change hue
+resnet-50 | 256*128 |256*1 |0.914786|0.788952|mirro,RE | 32*1 | Change hue(with mask)
 resnet-50 | 256*128 |256*1 |0.896081|0.738212|mirro,RE | 32*1 | Crop 288*144
 resnet-50 | 256*128 |256*1 |0.849169|0.673918|mirro | 32*1 | adam, epoch 20 lr decay
 resnet-50 | 256*128 |256*1 |0.864014|0.679649|mirro | 32*1 | adam, epoch 40 lr decay
