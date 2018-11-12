@@ -92,55 +92,61 @@ class Pcb(nn.Module):
              for i in range(self.num_part)]
         )
         if self.feature_mask:
-            self.mask = nn.ModuleList(
-                [nn.Sequential(nn.Linear(num_ftrs, feature_dim),
-                            nn.BatchNorm1d(feature_dim),
-                            nn.Dropout(p=0.5),
-                            nn.Sigmoid())
-                for i in range(self.num_part)]
-            )
+            self.mask = nn.Sequential(
+                    nn.Linear(num_ftrs, feature_dim*n_parts),
+                    nn.BatchNorm1d(feature_dim*n_parts),
+                    nn.Dropout(p=0.5),
+                    nn.Sigmoid())
         #self.branch.apply(weights_init_kaiming)
 
         if is_training:
+            self.classifier = nn.ModuleList(
+                [nn.Linear(feature_dim, config["num_labels"])
+                 for i in range(self.num_part)]
+            )
             if config["asoftmax_params"]["margin"] == 0:
-                self.classifier = nn.ModuleList(
-                    [nn.Linear(feature_dim, config["num_labels"])
-                     for i in range(self.num_part)]
-                )
+                self.classifier_global = nn.Linear(feature_dim * n_parts,
+                        config["num_labels"])
             else:
                 import logging
                 logging.info("Using angle loss:%s" %
                             config["asoftmax_params"])
                                              
-                self.classifier = nn.ModuleList(
-                        [MarginInnerProduct(config, feature_dim)
-                        for i in range(self.num_part)]
-                        )
+                self.classifier_global = MarginInnerProduct(
+                        config, feature_dim * n_parts,
+                        config["num_labels"])
 
     def forward(self, x, labels):
         x_split = torch.chunk(x, self.num_part, 2)
         x_global = []   # store the concated feature
         y_split = []
+        if self.feature_mask:
+            mask = F.avg_pool2d(x, kernel_size=x.size()[2:])
+            mask = mask.view(mask.size(0), -1)
+            mask = self.mask(mask)
+        else:
+            mask = 1
+            
         for i in range(self.num_part):
             x_temp = F.avg_pool2d(x_split[i], kernel_size=x_split[i].size()[2:])
             x_temp_r = x_temp.view(x_temp.size(0), -1)
             x_temp = self.branch[i](x_temp_r)
-            if self.feature_mask:
-                mask = self.mask[i](x_temp_r)
-                x_temp = x_temp * mask
             if self.training:
                 x_global.append(x_temp)
-                if self.config["asoftmax_params"]["margin"] == 0:  
-                    y_split.append(self.classifier[i](x_temp))
-                else:
-                    y_split.append(self.classifier[i](x_temp, labels))
+                y_split.append(self.classifier[i](x_temp))
             else:
                 y_split.append(x_temp)
 
         if self.training:
+            if self.config["asoftmax_params"]["margin"] > 0:
+                y_split.append(self.classifier_global(
+                    torch.cat(x_global, dim=1) * mask, labels))
+            else:
+                y_split.append(self.classifier_global(torch.cat(x_global,
+                    dim=1) * mask))
             return y_split
         else:
-            return torch.cat(y_split, dim=1)
+            return torch.cat(y_split, dim=1) * mask
 
 
 class TripletLoss(nn.Module):

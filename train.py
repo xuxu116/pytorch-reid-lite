@@ -102,8 +102,16 @@ def _run_train_loop(data_loader, config, net,
                 )
             tri_epoch += 1
     else:
-        for epoch in range(config["epochs"]):
-            lr_scheduler.step()
+        for epoch in range(config["epochs"]+config["lr"]["warmup_epoch"]):
+            if config["lr"]["warmup_epoch"] > 0 and epoch < \
+                config["lr"]["warmup_epoch"]:
+                for param_group in optimizer.param_groups:
+                    lr_decay = (epoch + 1) * 1.0 / config["lr"]["warmup_epoch"]
+                    param_group['lr'] = lr_decay * param_group['initial_lr']
+                    logging.info("Warning up, current lr: %s" % param_group['lr'])
+            else:
+                lr_scheduler.step()
+
             data_loader_iter = iter(data_loader)
             for step in range(len(data_loader)):
                 iter_start_time = time.time()
@@ -158,8 +166,12 @@ def train(config, data_loader):
     net = net.cuda()
 
     # Restore pretrain model
-    if os.path.exists(config.get("pretrain_snapshot", "")):
-        model_utils.restore_model(config["pretrain_snapshot"], net)
+    if config.get("pretrain_snapshot", "") != "":
+        logging.info("restore_model from %s" % config.get("pretrain_snapshot", ""))
+        if os.path.exists(config.get("pretrain_snapshot", "")):
+            model_utils.restore_model(config["pretrain_snapshot"], net)
+        else:
+            logging.info("%s not exits" % config.get("pretrain_snapshot", ""))
 
     # Evaluate interface
     evaluate_func = None
