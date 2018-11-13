@@ -58,6 +58,7 @@ resnet-50 | 384*128 |1536/6 |0.921318|0.765050|mirro,RE | 64*1 |add BN to pcb st
 resnet-50 | 384*128 |1536/6 |0.919240|0.768286|mirro,RE | 64*1 |add global branch
 resnet-50 | 384*128 |1536/6 |0.920724|0.771841|mirro,RE | 64*1 |global branch m=0.1
 resnet-50 | 384*128 |1536/6 |0.926960|0.777564|mirro,RE | 64*1 |global branch m=0.3, warm-up
+resnet-50 | 384*128 |1536/6 |0.926069|0.764451|mirro,RE | 64*1 |global branch m=0.4, warm-up
 resnet-50 | 384*128 |1536/6 |0.924287|0.777912|mirro,RE | 64*1 |global branch m=0.4, warm-up, mask
 resnet-50 | 384*128 |1536/6 |0.920428|0.775502|mirro,RE | 64*1 |mask@global branch
 resnet-50 | 384*128 |1536/6 |0.930523|0.783172|mirro,RE | 64*1 |change hue
