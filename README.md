@@ -83,6 +83,7 @@ resnet-50 | 256*128 |256*1 |0.898753|0.749818|mirro,RE | 32*1 | 120 epoch, decay
 resnet-50 | 256*128 |256*1 |0.907660|0.763313|mirro,RE | 32*1 | warm-up before 20 epoch
 resnet-50 | 256*128 |256*1 |0.906473|0.774181|mirro,RE | 32*1 | Add feature mask
 resnet-50 | 256*128 |256*1 |0.914786|0.788952|mirro,RE | 32*1 | Change hue(with mask)
+resnet-50 | 256*128 |256*1 |0.909739|0.776659|mirro,RE | 32*1 | Change hueX2(with mask)
 resnet-50 | 256*128 |256*1 |0.881235|0.722007|mirro,RE | 96*2 | Change hueX4(w\o mask)
 resnet-50 | 256*128 |256*1 |0.896081|0.738212|mirro,RE | 32*1 | Crop 288*144
 resnet-50 | 256*128 |256*1 |0.849169|0.673918|mirro | 32*1 | adam, epoch 20 lr decay
