@@ -11,6 +11,8 @@ class MarginInnerProduct(nn.Module):
         #  args
         self.in_units = in_units
         self.out_units = config["num_labels"] if out_units == -1 else out_units
+        if config["gan_params"].get("adv_train", False):
+            self.out_units *= 2
         self.config = config
 
         #  margin type
@@ -18,19 +20,46 @@ class MarginInnerProduct(nn.Module):
         self.s = config["asoftmax_params"].get("scale", 30.0)
 
         #  training parameter
-        self.weight = Parameter(torch.Tensor(self.in_units, self.out_units),
+        self.weight = Parameter(torch.Tensor(self.out_units, self.in_units),
                                 requires_grad=True)
+        self.unlabel_weight = None
+        """
+        if config["asoftmax_params"].get("unlabel_fold", 0) > 0:
+            self.unlabel_bs = config["gan_params"]["batch_size"]
+            self.unlabel_size = config["asoftmax_params"]["unlabel_fold"] * self.unlabel_bs
+            self.unlabel_weight = Parameter(torch.Tensor(self.in_units,
+                                            self.unlabel_size),
+                                            requires_grad=True)
+            self.unlabel_weight.data.uniform_(-1, 1).renorm_(2, 1, 1e-5).mul_(1e5)
+            self.current_fold = 0
+        """
         self.weight.data.uniform_(-1, 1).renorm_(2, 1, 1e-5).mul_(1e5)
 
         self.step = config["asoftmax_params"].get("step", 30000)
 
-    def forward(self, x, labels):
-        w = self.weight
+    def forward(self, x, labels, update_unlabel=False):
+        w = torch.tanspose(self.weight, 0, 1)
 
         x_norm = x.pow(2).sum(1).pow(0.5)
         w_norm = w.pow(2).sum(0).pow(0.5)
         x_mean = x_norm.mean()
         w_mean = w_norm.mean()
+        #self.weight.data = w / w_norm 
+        
+        """
+        if update_unlabel:
+            unlabel_f = torch.transpose(x, 0, 1)
+            f_norm = unlabel_f.pow(2).sum(0).pow(0.5)
+            start = self.current_fold * self.unlabel_bs
+            end = (self.current_fold + 1) * self.unlabel_bs
+            self.unlabel_weight.data[:, start: end] = unlabel_f / f_norm
+            self.current_fold = self.current_fold + 1 
+            if self.current_fold == self.config["asoftmax_params"]["unlabel_fold"]:
+                    self.current_fold = 0
+            return 
+        if self.unlabel_weight is not None:
+            logit_un = x.mm(self.unlabel_weight)
+        """
 
         # compute cosine theta
         cos_theta = x.mm(w) / x_norm.view(-1, 1) / w_norm.view(1, -1)
@@ -60,8 +89,10 @@ class MarginInnerProduct(nn.Module):
             output[index] -= cos_theta[index]
             output[index] += cos_theta_margin[index]
             output *= self.s  # scale up in order to make softmax work
-
-        return output
+        if self.unlabel_weight is not None:
+            return torch.cat([output, logit_un], 1)
+        else:
+            return output
 
 
 def weights_init_kaiming(m):
@@ -116,7 +147,7 @@ class Pcb(nn.Module):
                         config, feature_dim * n_parts,
                         config["num_labels"])
 
-    def forward(self, x, labels):
+    def forward(self, x, labels, update_unlabel=False):
         x_split = torch.chunk(x, self.num_part, 2)
         x_global = []   # store the concated feature
         y_split = []
@@ -131,7 +162,7 @@ class Pcb(nn.Module):
             x_temp = F.avg_pool2d(x_split[i], kernel_size=x_split[i].size()[2:])
             x_temp_r = x_temp.view(x_temp.size(0), -1)
             x_temp = self.branch[i](x_temp_r)
-            if self.training:
+            if self.training and not return_feature:
                 x_global.append(x_temp)
                 y_split.append(self.classifier[i](x_temp))
             else:

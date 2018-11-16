@@ -83,11 +83,12 @@ class ft_net(nn.Module):
                             config["model_params"]["feature_dim"])
 
 
-    def forward(self, x, labels=None):
+    def forward(self, x, labels=None, update_unlabel=False,
+            return_feature=False):
         embedding = self.model(x)
         embedding = self.dropout(embedding)
         if self.pcb_n_parts > 0:
-            return self.Pcb(embedding, labels)
+            return self.Pcb(embedding, labels, update_unlabel=update_unlabel)
 
         # Global average pool
         embedding = F.avg_pool2d(embedding, kernel_size=embedding.size()[2:])
@@ -101,7 +102,7 @@ class ft_net(nn.Module):
             embedding = embedding * mask
 
         # Return only the embedding in model deploy
-        if self.losses == {"tri_loss"} or (not self.training):
+        if self.losses == {"tri_loss"} or (not self.training) or labels is None:
             return embedding
         elif self.losses == {"xent_loss", "tri_loss"}:
             # Return both the embedding and logits if training with joint loss
@@ -109,6 +110,13 @@ class ft_net(nn.Module):
         else:
             # Otherwise return only the logits
             if self.config["asoftmax_params"]["margin"] == 0:
-                return self.classifier(embedding)
+                if return_feature:
+                    return embedding, self.classifier(embedding)
+                else:
+                    return self.classifier(embedding)
             else:
-                return self.classifier(embedding, labels)
+                if return_feature:
+                    return embedding, self.classifier(embedding, labels,
+                            update_unlabel)
+                else:
+                    return self.classifier(embedding, labels, update_unlabel)

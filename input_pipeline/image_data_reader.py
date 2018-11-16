@@ -12,7 +12,8 @@ import torchvision.transforms as transforms
 from samplers import TripletSampler
 
 
-def init_data_loader(config, num_processes=4, path_feature=None):
+def init_data_loader(config, num_processes=4, path_feature=None,
+        gan_loader=False):
     if os.path.exists(os.path.join(config["batches_dir"],
                                    "class_mapping.json")):
         import json
@@ -28,8 +29,15 @@ def init_data_loader(config, num_processes=4, path_feature=None):
 
     # init dataset
     logging.info("Initializing data loader, this might take a while.....")
-    all_transforms = _init_transforms(config["img_h"], config["img_w"],
-                                      config["data_augmentation"])
+    if gan_loader:
+        config_t = config["data_augmentation"]
+        config_t["random_erasing"] = False
+        config_t["gaussian_noise"] = True
+        all_transforms = _init_transforms(config["img_h"], config["img_w"],
+                                          config_t)
+    else:
+        all_transforms = _init_transforms(config["img_h"], config["img_w"],
+                                          config["data_augmentation"])
 
     if path_feature is not None:
         train_dataset = ImageFolderWithFeature(config["batches_dir"],
@@ -47,7 +55,10 @@ def init_data_loader(config, num_processes=4, path_feature=None):
         logging.info("Using class_balanced sampling strategy.")
 
     # construct data loader
-    batch_size = config["batch_size"] if (not class_balanced_sampling) else None
+    if gan_loader:
+        batch_size = config["gan_params"]["batch_size"] * len(config["parallels"])
+    else:
+        batch_size = config["batch_size"] if (not class_balanced_sampling) else None
     shuffle = not class_balanced_sampling
     sampler = TripletSampler(config["batch_sampling_params"], train_dataset) \
         if class_balanced_sampling else None
@@ -56,7 +67,8 @@ def init_data_loader(config, num_processes=4, path_feature=None):
         shuffle=shuffle,
         batch_size=batch_size,
         num_workers=num_processes,
-        batch_sampler=sampler
+        batch_sampler=sampler,
+        drop_last=len(config["parallels"])>1
     )
 
     # log training set info

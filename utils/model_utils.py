@@ -7,14 +7,15 @@ from collections import OrderedDict
 torch_ver = torch.__version__[:3]
 
 
-def save_and_evaluate(net, config, evaluate_func, save_ckpt=True):
+def save_and_evaluate(net, config, evaluate_func, save_ckpt=True,
+        model_name="model.pth"):
     config["best_eval_result"] = 0.0 if "best_eval_result" not in config\
         else config["best_eval_result"]
 
     state_dict = net.state_dict()
 
     if save_ckpt:
-        checkpoint_path = os.path.join(config["sub_working_dir"], "model.pth")
+        checkpoint_path = os.path.join(config["sub_working_dir"], model_name)
         torch.save(state_dict, checkpoint_path)
         logging.info("Model checkpoint saved to %s" % checkpoint_path)
 
@@ -70,6 +71,13 @@ def restore_model(model_path, model, eval_mode=False):
             name = "module." + k
             new_state_dict[name] = v
         state_dict = new_state_dict
+
+    #new_state_dict = OrderedDict()
+    #for k, v in state_dict.items():
+    #    if 'classifier' in k:
+    #        continue
+    #    new_state_dict[k] = v
+    #state_dict = new_state_dict
 
     # Check if there is key mismatch:
     mismatch_keys = []

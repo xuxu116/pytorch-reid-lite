@@ -1,24 +1,26 @@
 {
     "asoftmax_params": {
-        "margin": [0.2],
-        "step": 400,
+        "margin": 0,
+        "step": 2000,
+        "unlabel_fold": 0,
+        "unlabel_update": 0,
         "scale": 0
     },
     "batch_sampling_params": {
         "K": 4,
         "P": 32,
-        "batch_size": 32,
+        "batch_size": 16,
         "class_balanced": false
     },
     "batches_dir": "/world/data-gpu-94/sysu-reid/market_dataset",
     "data_augmentation": {
-        "colour_jitering": true,
-        "crop_h": 256,
-        "crop_w": 128,
-        "mirror": false,
-        "random_erasing": false,
-        "gaussian_noise": true,
-        "imagenet_static": false,
+        "colour_jitering": false,
+        "crop_h": 0,
+        "crop_w": 0,
+        "mirror": true,
+        "random_erasing": true,
+        "gaussian_noise": false,
+        "imagenet_static": true,
         "rotation": 0
     },
     "epochs": 120,
@@ -29,12 +31,13 @@
     },
     "fine_tune": false,
     "imagenet_pretrain": true,
-    "img_h": 288,
-    "img_w": 144,
+    "img_h": 256,
+    "img_w": 128,
     "lr": {
         "base_lr": 0.01,
         "decay_gamma": 0.1,
         "decay_step": 40,
+        "warmup_epoch": 20,
         "fc_lr": 0.1
     },
     "model_params": {
@@ -42,14 +45,28 @@
         "model": "resnet_50",
         "pcb_n_parts": 0,
         "last_conv_stride": 1,
-        "feature_mask": true
+        "feature_mask": false
+    },
+    "gan_params": {
+        "input_dim": 0,
+        "batch_size": 128,
+        "adv_train": false,
+        "alone_train": true,
+        "lr": 0.0002,
+        "beta1": 0.5,
+        "ngf": 64,
+        "ndf": 32,
+        "preheating": 0,
+        "pretrain_snapshot_d": "",
+        "pretrain_snapshot_g": "",
+        "d_update_freq":1.0
     },
     "num_preprocess_workers": 4,
     "optimizer": "sgd",
     "parallels": [
-        0
+        2
     ],
-    "pretrain_snapshot": "/world/data-gpu-57/xulie/pytorch-output/market_256_re_crop_mask/model_best.pth",
+    "pretrain_snapshot": "",
     "tri_loss_params": {
         "margin": 0,
         "use_adaptive_weight": true,
@@ -57,5 +74,5 @@
         "lambda_cls": 0
     }, 
     "weight_decay": 5e-4,
-    "working_dir": "/world/data-gpu-57/xulie/pytorch-output"
+    "working_dir": ""
 }
