@@ -22,7 +22,10 @@ def _compute_batch_acc(config, outputs, labels, step=None, class_balanced=False)
     #batch_size = config["batch_size"] \
     #    if not class_balanced \
     #    else batch_params["P"] * batch_params["K"]
-    batch_size = outputs.shape[0]
+    if config["model_params"].get("pcb_n_parts", 0) == 0:
+        batch_size = outputs.shape[0]
+    else:
+        batch_size = outputs[0].shape[0]
     _, preds = torch.max(outputs.data, 1) \
         if config["model_params"].get("pcb_n_parts", 0) == 0 \
         else torch.max(torch.mean(torch.stack(outputs), dim=0).data, 1)
@@ -86,9 +89,8 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
     netD.zero_grad()
     label_cls.fill_(real_label)
     errG_cls, D_G_z2 = _get_loss_d(fake, netD, label_cls, loss) 
-    """
     if gan_params["adv_train"] and net is not None and \
-            step % 30 == 0:
+            step % 50 == 0:
         feature = net(images, return_feature=True).data
         noise_f = feature + torch.randn_like(feature) * 0.1
         noise_f_norm = noise_f.pow(2).sum(1).pow(0.5).view(-1, 1)
@@ -99,9 +101,9 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
                 loss_dict["xent_loss"], config)
         errG_id_REID.backward(retain_graph=True)
         errG_cls_f.backward(retain_graph=True)
-        logging.info("errG_id_REID:%.3f, accG_REID:%.3f"
-                %(errG_id_REID.item(), accG_REID))
-    """
+        if step > 0:
+            logging.info("epoch [%.3d] iter = %d errG_id_REID:%.3f, accG_REID:%.3f"
+                    %(epoch, step, errG_id_REID.item(), accG_REID))
     errG_cls.backward()
     optimizerG.step()
 
@@ -234,6 +236,7 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
                      io_finished_time, unlabel_buffer=None, **kwargs):
     # Forward and backward
     optimizer.zero_grad()
+    feature = None
     feature, outputs = net(images, labels=labels, return_feature=True)
     if unlabel_buffer is not None:
        logit_un = feature.mm(unlabel_buffer)

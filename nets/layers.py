@@ -37,7 +37,7 @@ class MarginInnerProduct(nn.Module):
 
         self.step = config["asoftmax_params"].get("step", 30000)
 
-    def forward(self, x, labels, update_unlabel=False):
+    def forward(self, x, labels):
         w = torch.tanspose(self.weight, 0, 1)
 
         x_norm = x.pow(2).sum(1).pow(0.5)
@@ -147,7 +147,7 @@ class Pcb(nn.Module):
                         config, feature_dim * n_parts,
                         config["num_labels"])
 
-    def forward(self, x, labels, update_unlabel=False):
+    def forward(self, x, labels, return_feature=False):
         x_split = torch.chunk(x, self.num_part, 2)
         x_global = []   # store the concated feature
         y_split = []
@@ -162,7 +162,7 @@ class Pcb(nn.Module):
             x_temp = F.avg_pool2d(x_split[i], kernel_size=x_split[i].size()[2:])
             x_temp_r = x_temp.view(x_temp.size(0), -1)
             x_temp = self.branch[i](x_temp_r)
-            if self.training and not return_feature:
+            if self.training:
                 x_global.append(x_temp)
                 y_split.append(self.classifier[i](x_temp))
             else:
@@ -175,7 +175,11 @@ class Pcb(nn.Module):
             else:
                 y_split.append(self.classifier_global(torch.cat(x_global,
                     dim=1) * mask))
-            return y_split
+            
+            if return_feature:
+                return torch.cat(x_global, dim=1) * mask, y_split
+            else:
+                return y_split
         else:
             return torch.cat(y_split, dim=1) * mask
 

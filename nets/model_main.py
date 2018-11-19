@@ -71,9 +71,11 @@ class ft_net(nn.Module):
             self.classifier = None
             if "xent_loss" in self.losses or True:
                 if config["asoftmax_params"]["margin"] == 0:
+                    coef = 2 if config["gan_params"]["input_dim"] > 0 and \
+                            config["gan_params"]["adv_train"] else 1
                     self.classifier = nn.Linear(
                         config["model_params"]["feature_dim"],
-                        config["num_labels"])
+                        config["num_labels"] * coef)
                     self.classifier.apply(weights_init_classifier)
                 else:
                     import logging
@@ -83,12 +85,11 @@ class ft_net(nn.Module):
                             config["model_params"]["feature_dim"])
 
 
-    def forward(self, x, labels=None, update_unlabel=False,
-            return_feature=False):
+    def forward(self, x, labels=None, return_feature=False):
         embedding = self.model(x)
         embedding = self.dropout(embedding)
         if self.pcb_n_parts > 0:
-            return self.Pcb(embedding, labels, update_unlabel=update_unlabel)
+            return self.Pcb(embedding, labels, return_feature=return_feature)
 
         # Global average pool
         embedding = F.avg_pool2d(embedding, kernel_size=embedding.size()[2:])
