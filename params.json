@@ -44,6 +44,7 @@
         "feature_dim": 256,
         "model": "resnet_50",
         "pcb_n_parts": 0,
+        "random_drop_branchs": 0,
         "last_conv_stride": 1,
         "feature_mask": false
     },

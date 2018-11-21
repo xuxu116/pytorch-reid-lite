@@ -125,7 +125,7 @@ class Pcb(nn.Module):
         if self.feature_mask:
             self.mask = nn.Sequential(
                     nn.Linear(num_ftrs, feature_dim*n_parts),
-                    nn.BatchNorm1d(feature_dim*n_parts),
+                    nn.BatchNorm0d(feature_dim*n_parts),
                     nn.Dropout(p=0.5),
                     nn.Sigmoid())
         #self.branch.apply(weights_init_kaiming)
@@ -147,7 +147,7 @@ class Pcb(nn.Module):
                         config, feature_dim * n_parts,
                         config["num_labels"])
 
-    def forward(self, x, labels, return_feature=False):
+    def forward(self, x, labels=None, return_feature=False):
         x_split = torch.chunk(x, self.num_part, 2)
         x_global = []   # store the concated feature
         y_split = []
@@ -168,7 +168,7 @@ class Pcb(nn.Module):
             else:
                 y_split.append(x_temp)
 
-        if self.training:
+        if self.training or labels is not None:
             if self.config["asoftmax_params"]["margin"] > 0:
                 y_split.append(self.classifier_global(
                     torch.cat(x_global, dim=1) * mask, labels))

@@ -5,15 +5,25 @@ import logging
 import torch
 import random
 import torch.nn as nn
+import numpy as np
 
 from model_utils import save_and_evaluate
 from nets import layers
 
 
 def _get_xent_loss(config, criterion, outputs, labels, step=None):
-    loss = criterion(outputs, labels).mean() \
-        if config["model_params"].get("pcb_n_parts", 0) == 0 \
-        else sum([criterion(output, labels) for output in outputs])
+    if config["model_params"].get("pcb_n_parts", 0) == 0:
+        loss = criterion(outputs, labels).mean()
+    else:
+        # random erase several branchs 
+        drop_b = config["model_params"].get("random_drop_branchs", 0)
+        if drop_b > 0:
+            n_parts = len(outputs)
+            branch_list = range(n_parts)
+            erase = np.random.randint(0, high=n_parts, size=drop_b)
+            selected = set(branch_list) - set(erase)
+            outputs = [outputs[i] for i in selected]
+        loss = sum([criterion(output, labels) for output in outputs])
     return loss
 
 
@@ -38,7 +48,7 @@ def _get_loss_d(img, netD, label_cls, criterion):
     b_size = img.shape[0]
     output = netD(img)
     output = output.view(-1)
-    errD_cls = criterion(output, label_cls)
+    errD_cls = output.mean()# criterion(output, label_cls)
     D_x = output.mean().item()
     return errD_cls, D_x
 
@@ -55,23 +65,29 @@ def get_loss_reid(img, label, cls_net, loss, config):
 
 
 def run_iter_gan(images, labels, step, epoch, config, netG, netD,
-                    loss, optimizerD, optimizerG, net=None, loss_dict=None):
+                    loss, optimizerD, optimizerG, net=None, loss_dict=None,
+                    optimizer=None):
     real_label = 1
     fake_label = 0
+    one = torch.FloatTensor([1])
+    mone = one * -1
     b_size = images.size(0)
+
+    for p in netD.parameters():
+        p.data.clamp_(-0.01, 0.01)
 
     gan_params = config["gan_params"]
     nz = gan_params["input_dim"]
     d_update_freq = gan_params.get("d_update_freq", 1)
     update_d = (random.random() < d_update_freq)
-    update_adv = (random.random() < 0.2)
+    update_adv = (random.random() < 0.3)
     netD.zero_grad()
     label_cls = torch.full((b_size,), real_label, dtype=torch.float).cuda()
 
     #update D with real images 
     errD_real_cls, D_x = _get_loss_d(images, netD, label_cls, loss)
     if update_d:
-        errD_real_cls.backward(retain_graph=False)
+        errD_real_cls.backward(mone, retain_graph=False)
     
     #updge D with fake images
     noise = torch.randn(b_size, nz).cuda()
@@ -81,7 +97,7 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
     fake = netG(noise)
     errD_fake_cls, D_G_z1 = _get_loss_d(fake.detach(), netD, label_cls, loss)
     if update_d:
-        errD_fake_cls.backward(retain_graph=True)
+        errD_fake_cls.backward(one, retain_graph=True)
         optimizerD.step()
 
     #updage G
@@ -89,25 +105,45 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
     netD.zero_grad()
     label_cls.fill_(real_label)
     errG_cls, D_G_z2 = _get_loss_d(fake, netD, label_cls, loss) 
+    batch_size = config["batch_size"]
+    batch_size = images.shape[0]
     if gan_params["adv_train"] and net is not None and \
-            step % 50 == 0:
-        feature = net(images, return_feature=True).data
-        noise_f = feature + torch.randn_like(feature) * 0.1
+            step % 20 == 0:
+        feature = net(images[:batch_size], return_feature=True).data
+        noise_f = feature + torch.randn_like(feature) * 0.01
         noise_f_norm = noise_f.pow(2).sum(1).pow(0.5).view(-1, 1)
         noise_f = noise_f / noise_f_norm.view(-1, 1)
         fake_f = netG(noise_f) 
-        errG_cls_f, _ = _get_loss_d(fake_f, netD, label_cls, loss)
-        errG_id_REID, accG_REID = get_loss_reid(fake_f, labels, net,
+        errG_cls_f, _ = _get_loss_d(fake_f, netD, label_cls[:batch_size], loss)
+        errG_id_REID, accG_REID = get_loss_reid(fake_f, labels[:batch_size], net,
                 loss_dict["xent_loss"], config)
         errG_id_REID.backward(retain_graph=True)
-        errG_cls_f.backward(retain_graph=True)
-        if step > 0:
+        errG_cls_f.backward(mone, retain_graph=True)
+
+        errG_id_ADV = 0
+        accG_ADV = 0
+        if update_adv and accG_REID > 0.7:
+            net.zero_grad()
+            labels_shift = labels[:batch_size] + config["num_labels"]
+            errG_id_ADV, accG_ADV = get_loss_reid(fake_f.detach(), labels_shift, net,
+                    loss_dict["xent_loss"], config)
+            errG_id_ADV.backward()
+            optimizer.step()
+            errG_id_ADV = errG_id_ADV.item()
             logging.info("epoch [%.3d] iter = %d errG_id_REID:%.3f, accG_REID:%.3f"
-                    %(epoch, step, errG_id_REID.item(), accG_REID))
-    errG_cls.backward()
+                    " loss_id:%.3f, acc_fake_id:%.3f"
+                    %(epoch, step, errG_id_REID.item(), accG_REID,
+                        errG_id_ADV, accG_ADV))
+        
+        if step > 0 and step % 10 == 0:
+            logging.info("epoch [%.3d] iter = %d errG_id_REID:%.3f, accG_REID:%.3f"
+                    " loss_id:%.3f, acc_fake_id:%.3f"
+                    %(epoch, step, errG_id_REID.item(), accG_REID,
+                        errG_id_ADV, accG_ADV))
+    errG_cls.backward(mone)
     optimizerG.step()
 
-    log_step = 50 if config.get("model_parallel", False) else 50
+    log_step = 50
     if step > 0 and step % log_step == 0:
         logging.info(
                 "epoch [%.3d] iter = %d loss_r = %.3f loss_f = %.3f"
@@ -239,8 +275,8 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
     feature = None
     feature, outputs = net(images, labels=labels, return_feature=True)
     if unlabel_buffer is not None:
-       logit_un = feature.mm(unlabel_buffer)
-       outputs = torch.cat([outputs, logit_un], 1)
+        logit_un = feature.mm(unlabel_buffer) + net.classifier.bias.mean()
+        outputs = torch.cat([outputs, logit_un], 1)
     criterion = loss_dict["xent_loss"]
     loss = _get_xent_loss(config, criterion, outputs, labels, step)
 

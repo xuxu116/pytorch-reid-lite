@@ -83,7 +83,7 @@ def _run_train_loop(data_loader, config, net,
         config["asoftmax_params"].get("unlabel_fold", 0) > 0:
         unlabel_bs = config["batch_size"] 
         unlabel_size = config["asoftmax_params"]["unlabel_fold"] * unlabel_bs
-        unlabel_buffer = torch.zeros(config["model_params"]["feature_dim"],
+        unlabel_buffer = torch.randn(config["model_params"]["feature_dim"],
                 unlabel_size).cuda()          
         current_fold = 0
 
@@ -137,10 +137,11 @@ def _run_train_loop(data_loader, config, net,
                             optimizerD=kwargs["optimizerD"],
                             optimizerG=kwargs["optimizerG"]
                         )   
-                model_utils.save_and_evaluate(kwargs["netG"], config, None,
-                        model_name="netG.pth")
-                model_utils.save_and_evaluate(kwargs["netD"], config, None, 
-                        model_name="netD.pth")
+                if epoch > 0 and epoch % 10 == 0:
+                    model_utils.save_and_evaluate(kwargs["netG"], config, None,
+                            model_name="netG.pth")
+                    model_utils.save_and_evaluate(kwargs["netD"], config, None, 
+                            model_name="netD.pth")
         
         # main train loop
         for epoch in range(config["epochs"]+config["lr"]["warmup_epoch"] +
@@ -157,7 +158,7 @@ def _run_train_loop(data_loader, config, net,
             
             # gan trainging
             if kwargs.has_key("netG") and gan_params.get("alone_train", False):
-                for i in range(3):
+                for i in range(gan_params.get("train_loop", 3)):
                     data_loader_iter_gan = iter(gan_loader) 
                     for step in range(len(gan_loader)):
                         images, labels = data_loader_iter_gan.next()
@@ -173,12 +174,18 @@ def _run_train_loop(data_loader, config, net,
                             optimizerD=kwargs["optimizerD"],
                             optimizerG=kwargs["optimizerG"],
                             net=net,
-                            loss_dict=loss_dict
+                            loss_dict=loss_dict,
+                            optimizer=optimizer
                         )   
-                model_utils.save_and_evaluate(kwargs["netG"], config, None,
-                        model_name="netG.pth")
-                model_utils.save_and_evaluate(kwargs["netD"], config, None, 
-                        model_name="netD.pth")
+                if epoch > 0 and epoch % 10 == 0:
+                    model_utils.save_and_evaluate(kwargs["netG"], config, None,
+                            model_name="netG.pth")
+                    model_utils.save_and_evaluate(kwargs["netD"], config, None, 
+                            model_name="netD.pth")
+            
+            # train without update reid model
+            if gan_params.get("only_train", False):
+                continue
 
             # reid training
             data_loader_iter = iter(data_loader)
@@ -197,8 +204,13 @@ def _run_train_loop(data_loader, config, net,
                     config["asoftmax_params"]["unlabel_update"] == 0:
                     b_size = config["batch_size"]
                     noise = torch.randn(b_size, gan_params["input_dim"]).cuda()           
+                    noise_norm = noise.pow(2).sum(1).pow(0.5).view(-1, 1)
+                    noise = noise / noise_norm.view(-1, 1)
                     fake = kwargs["netG"](noise)
-                    weight_mean = net.classifier.weight.pow(2).sum(1).mean()
+                    if len(config["parallels"]) > 1:
+                        weight_mean = net.module.classifier.weight.pow(2).sum(1).mean()
+                    else:
+                        weight_mean = net.classifier.weight.pow(2).sum(1).mean()    
                     net.eval()
                     feature = net(fake, return_feature=True)
                     net.train()
@@ -206,7 +218,7 @@ def _run_train_loop(data_loader, config, net,
                     feature_norm = feature.pow(2).sum(0).pow(0.5)
                     start = current_fold * unlabel_bs
                     end = (current_fold + 1) * unlabel_bs
-                    feature = feature / feature_norm * weight_mean
+                    feature = feature / feature_norm * weight_mean * 0.4
                     unlabel_buffer[:, start: end] = feature.data
                     current_fold = current_fold + 1 
                     if current_fold == config["asoftmax_params"]["unlabel_fold"]:

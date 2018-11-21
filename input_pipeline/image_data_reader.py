@@ -33,7 +33,9 @@ def init_data_loader(config, num_processes=4, path_feature=None,
         config_t = config["data_augmentation"]
         config_t["random_erasing"] = False
         config_t["gaussian_noise"] = True
-        all_transforms = _init_transforms(config["img_h"], config["img_w"],
+        config_t["crop_h"] = 256
+        config_t["crop_w"] = 128
+        all_transforms = _init_transforms(288, 144,
                                           config_t)
     else:
         all_transforms = _init_transforms(config["img_h"], config["img_w"],
