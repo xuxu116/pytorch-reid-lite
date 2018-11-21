@@ -56,6 +56,7 @@ resnet-50 | 384*128 |1536/6 |0.856888|0.640600|mirro | 64*1 |last_conv_stride=1
 resnet-50 | 384*128 |1536/6 |0.920724|0.755717|mirro | 64*1 |add BN to pcb stripe
 resnet-50 | 384*128 |1536/6 |0.921318|0.765050|mirro,RE | 64*1 |add BN to pcb stripe
 resnet-50 | 384*128 |1536/6 |0.919240|0.768286|mirro,RE | 64*1 |add global branch
+resnet-50 | 384*128 |1536/6 |0.926366|0.780383|mirro,RE | 64*1 |random erase 1 branch, wp
 resnet-50 | 384*128 |1536/6 |0.920724|0.771841|mirro,RE | 64*1 |global branch m=0.1
 resnet-50 | 384*128 |1536/6 |0.926960|0.777564|mirro,RE | 64*1 |global branch m=0.3, warm-up
 resnet-50 | 384*128 |1536/6 |0.926069|0.764451|mirro,RE | 64*1 |global branch m=0.4, warm-up
