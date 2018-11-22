@@ -58,6 +58,8 @@ resnet-50 | 384*128 |1536/6 |0.921318|0.765050|mirro,RE | 64*1 |add BN to pcb st
 resnet-50 | 384*128 |1536/6 |0.919240|0.768286|mirro,RE | 64*1 |add global branch
 resnet-50 | 384*128 |1536/6 |0.927553|0.776928|mirro,RE | 64*1 |add global branch
 resnet-50 | 384*128 |1536/6 |0.926366|0.784323|mirro,RE | 64*1 |random erase 1 branch, wp
+resnet-50 | 384*128 |1536/6 |0.928147|0.785333|mirro,RE | 64*1 |random erase 5 branch, wp
+resnet-50 | 384*128 |1536/6 |0.929929|0.790466|mirro,RE | 64*1 |random erase 5 branch, wp
 resnet-50 | 384*128 |1536/6 |0.920724|0.771841|mirro,RE | 64*1 |global branch m=0.1
 resnet-50 | 384*128 |1536/6 |0.926960|0.777564|mirro,RE | 64*1 |global branch m=0.3, warm-up
 resnet-50 | 384*128 |1536/6 |0.926069|0.764451|mirro,RE | 64*1 |global branch m=0.4, warm-up
