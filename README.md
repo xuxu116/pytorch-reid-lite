@@ -81,6 +81,13 @@ GPU memory usage:
 - 9529MiB for `last_conv_stride=1` (130 example/sec)
 - 7155MiB for `last_conv_stride=2` (170 example/sec)
 
+## add global branchs at resnet-stage-4
+backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
+--- | --- | --- | --- | --- | --- | --- | ---
+resnet-50 | 384*128 |1536/6 + 256|0.937648|0.810002|mirro,RE | 64*1 |global branch with feature erasing
+
+
+
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
 resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | last_stride=1
