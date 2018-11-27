@@ -55,7 +55,6 @@ resnet-50 | 384*128 |1536/6 |0.837886|0.620621|mirro | 64*1 |add dropout before 
 resnet-50 | 384*128 |1536/6 |0.856888|0.640600|mirro | 64*1 |last_conv_stride=1
 resnet-50 | 384*128 |1536/6 |0.920724|0.755717|mirro | 64*1 |add BN to pcb stripe
 resnet-50 | 384*128 |1536/6 |0.921318|0.765050|mirro,RE | 64*1 |add BN to pcb stripe
-resnet-50 | 384*128 |1536/6 |0.919240|0.768286|mirro,RE | 64*1 |add global branch
 resnet-50 | 384*128 |1536/6 |0.927553|0.776928|mirro,RE | 64*1 |add global branch
 resnet-50 | 384*128 |1536/6 |0.926366|0.784323|mirro,RE | 64*1 |random erase 1 branch, wp
 resnet-50 | 384*128 |1536/6 |0.928147|0.785333|mirro,RE | 64*1 |random erase 5 branch, wp
@@ -81,11 +80,17 @@ GPU memory usage:
 - 9529MiB for `last_conv_stride=1` (130 example/sec)
 - 7155MiB for `last_conv_stride=2` (170 example/sec)
 
-## add global branchs at resnet-stage-4
+## add global branchs at resnet-stage-4(start from no relu and dropout, adaptiveMaxPool)
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
-resnet-50 | 384*128 |1536/6 + 256|0.937648|0.810002|mirro,RE | 64*1 |global branch with feature erasing
-
+resnet-50 | 384*128 |1536+256|0.935273|0.802506|mirro,RE| 64*1 |no relu & dropout, global f erasing
+resnet-50 | 384*128 |1536+256|0.940321|0.818069|mirro,RE| 64*1 |padcrop_10
+resnet-50 | 384*128 |1536+256|0.935570|0.820962|mirro,RE| 64*1 |random erase 6 branch(RE)
+resnet-50 | 384*128 |1536+256|0.935570|0.821505|mirro,RE| 64*1 |dropout, without feature erasing
+resnet-50 | 384*128 |1536+256|0.|0.|mirro,RE| 64*1 |dropout, no_pcbRE, no f_RE
+resnet-50 | 384*128 |1536+256|0.|0.|mirro,RE| 64*1 |pcbFE0.3, no_pcbRE, no f_RE
+resnet-50 | 384*128 |1536+256|0.927257|0.793121|mirro,RE| 64*1 |mask@ all bracnchs, pcbRE
+resnet-50 | 384*128 |1536+256|||mirro,RE| 32*4 |sgd split_triloss, no_mask, no_pcbRE
 
 
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
