@@ -81,7 +81,7 @@ GPU memory usage:
 - 7155MiB for `last_conv_stride=2` (170 example/sec)
 
 ## add global branchs at resnet-stage-4(start from no relu and dropout, adaptiveMaxPool)
-backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
+backbone | imgSize | PCB | rank1  | map | aug. | bs | comments
 --- | --- | --- | --- | --- | --- | --- | ---
 resnet-50 | 384*128 |1536+256|0.935273|0.802506|mirro,RE| 64*1 |no relu & dropout, global f erasing
 resnet-50 | 384*128 |1536+256|0.940321|0.818069|mirro,RE| 64*1 |padcrop_10
@@ -90,7 +90,7 @@ resnet-50 | 384*128 |1536+256|0.935570|0.821505|mirro,RE| 64*1 |dropout, without
 resnet-50 | 384*128 |1536+256|0.934679|0.815394|mirro,RE| 64*1 |dropout, no_pcbRE, no f_RE
 resnet-50 | 384*128 |1536+256|0.937945|0.815731|mirro,RE| 64*1 |pcbFE0.3, no_pcbRE, no f_RE
 resnet-50 | 384*128 |1536+256|0.927257|0.793121|mirro,RE| 64*1 |mask@ all bracnchs, pcbRE
-resnet-50 | 384*128 |1536+256|||mirro,RE| 32*4 |sgd split_triloss, no_mask, no_pcbRE
+resnet-50 | 384*128 |1536+256|||mirro,RE| 32*2 |sgd split_triloss, no_mask, no_pcbRE
 
 
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
