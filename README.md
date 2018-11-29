@@ -83,9 +83,9 @@ GPU memory usage:
 ## add global branchs at resnet-stage-4(start from no relu and dropout, adaptiveMaxPool)
 backbone | imgSize | PCB | rank1  | map | aug. | bs | comments
 --- | --- | --- | --- | --- | --- | --- | ---
-resnet-50 | 384*128 |1536+256|0.935273|0.802506|mirro,RE| 64*1 |no relu & dropout, global f erasing
+resnet-50 | 384*128 |1536+256|0.935273|0.802506|mirro,RE| 64*1 |no relu & dropout, global f erasing(RE)
 resnet-50 | 384*128 |1536+256|0.940321|0.818069|mirro,RE| 64*1 |padcrop_10
-resnet-50 | 384*128 |1536+256|0.935570|0.820962|mirro,RE| 64*1 |random erase 6 branch(RE)
+resnet-50 | 384*128 |1536+256|0.935570|0.820962|mirro,RE| 64*1 |random erase 6 branch(RB)
 resnet-50 | 384*128 |1536+256|0.935570|0.821505|mirro,RE| 64*1 |dropout, without feature erasing
 resnet-50 | 384*128 |1536+256|0.937055|0.818202|mirro,RE| 64*1 |dropout, no_pcbRE, no f_RE
 resnet-50 | 384*128 |1536+256|0.937945|0.815731|mirro,RE| 64*1 |pcbFE0.3, no_pcbRE, no f_RE
@@ -95,8 +95,10 @@ resnet-50 | 384*128 |1536+256|0.925178|0.807808|mirro,RE| 32*2 |pcb_s_triloss, n
 resnet-50 | 384*128 |1536+256|0.932304|0.819861|mirro,RE| 32*2 |pcb_s_triloss m=0.16
 resnet-50 | 384*128 |1536+256|0.940618|0.826704|mirro,RE| 32*2 |g_triloss + pcb_g_triloss(soft)
 resnet-50 | 384*128 |1536+256|0.940618|0.831889|mirro,RE| 32*2 |g_tri + pcb_g_tri, m=0.16
-resnet-50 | 384*128 |1536+256|0.941211|0.835557|mirro,RE| 32*2 |g_tri + pcb_g_tri, pcbRE6
-resnet-50 | 384*128 |1536+256|0.|0.|mirro,RE| 32*2 |g_tri_0.16, pcbRE6
+resnet-50 | 384*128 |1536+256|0.941211|0.835557|mirro,RE| 32*2 |g_tri + pcb_g_tri, pcbRB6
+resnet-50 | 384*128 |1536+256|0.943290|0.834388|mirro,RE| 32*2 |g_tri_0.16, pcbRB6
+resnet-50 | 384*128 |1536+256|0.938836|0.830328|mirro,RE| 48*3 |g_tri_0.16, pcbRB6
+resnet-50 | 384*128 |1536+256|0.|0.|mirro,RE| 32*2 |g_tri_0.16, pcbRB6, BN_nobias
 
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
