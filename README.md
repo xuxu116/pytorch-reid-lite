@@ -90,10 +90,13 @@ resnet-50 | 384*128 |1536+256|0.935570|0.821505|mirro,RE| 64*1 |dropout, without
 resnet-50 | 384*128 |1536+256|0.937055|0.818202|mirro,RE| 64*1 |dropout, no_pcbRE, no f_RE
 resnet-50 | 384*128 |1536+256|0.937945|0.815731|mirro,RE| 64*1 |pcbFE0.3, no_pcbRE, no f_RE
 resnet-50 | 384*128 |1536+256|0.927257|0.793121|mirro,RE| 64*1 |mask@ all bracnchs, pcbRE
-resnet-50 | 384*128 |1536+256|0.936461|0.815294|mirro,RE| 64*1 |no f_RE, update max loss branch
-resnet-50 | 384*128 |1536+256|0.925178|0.807808|mirro,RE| 32*2 |sgd pcb_s_triloss, no_mask, no_pcbRE
-resnet-50 | 384*128 |1536+256|0.932304|0.819861|mirro,RE| 32*2 |sgd pcb_s_triloss m=0.16
-resnet-50 | 384*128 |1536+256|0.940618|0.826704|mirro,RE| 32*2 |sgd g_triloss + pcb_g_triloss(soft)
+resnet-50 | 384*128 |1536+256|0.940024|0.818851|mirro,RE| 64*1 |no f_RE, update max loss branch
+resnet-50 | 384*128 |1536+256|0.925178|0.807808|mirro,RE| 32*2 |pcb_s_triloss, no_mask, no_pcbRE
+resnet-50 | 384*128 |1536+256|0.932304|0.819861|mirro,RE| 32*2 |pcb_s_triloss m=0.16
+resnet-50 | 384*128 |1536+256|0.940618|0.826704|mirro,RE| 32*2 |g_triloss + pcb_g_triloss(soft)
+resnet-50 | 384*128 |1536+256|0.940618|0.831889|mirro,RE| 32*2 |g_tri + pcb_g_tri, m=0.16
+resnet-50 | 384*128 |1536+256|0.941211|0.835557|mirro,RE| 32*2 |g_tri + pcb_g_tri, pcbRE6
+resnet-50 | 384*128 |1536+256|0.|0.|mirro,RE| 32*2 |g_tri_0.16, pcbRE6
 
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
