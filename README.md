@@ -104,6 +104,12 @@ resnet-50 | 384*128 |1536+256|0.940024|0.828990|mirro,RE| 32*2 |g_tri_0.16, pcbR
 resnet-50 | 384*128 |1536+256|0.939727|0.830806|mirro,RE| 48*3 |g_tri_0.16, pcbRB6
 resnet-50 | 384*128 |1536+256|0.939133|0.829087|mirro,RE| 32*2 |g_tri_0.16, pcbRB6, BN_nobias
 
+Conclusions:
+1. global branch after stage-4 helps
+2. AM-softmax still cause overfitting
+3. Tri-loss only used in global features
+4. Update each PCB branches randomly
+
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
 resnet-50 | 256*128 |256*1 |0.802553|0.601922|mirro | 128*1 | last_stride=1
