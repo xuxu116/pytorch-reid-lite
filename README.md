@@ -97,8 +97,12 @@ resnet-50 | 384*128 |1536+256|0.940618|0.826704|mirro,RE| 32*2 |g_triloss + pcb_
 resnet-50 | 384*128 |1536+256|0.940618|0.831889|mirro,RE| 32*2 |g_tri + pcb_g_tri, m=0.16
 resnet-50 | 384*128 |1536+256|0.941211|0.835557|mirro,RE| 32*2 |g_tri + pcb_g_tri, pcbRB6
 resnet-50 | 384*128 |1536+256|0.943290|0.834388|mirro,RE| 32*2 |g_tri_0.16, pcbRB6
-resnet-50 | 384*128 |1536+256|0.938836|0.830328|mirro,RE| 48*3 |g_tri_0.16, pcbRB6
-resnet-50 | 384*128 |1536+256|0.|0.|mirro,RE| 32*2 |g_tri_0.16, pcbRB6, BN_nobias
+resnet-50 | 384*128 |1536+256|0.939133|0.826529|mirro,RE| 32*2 |g_tri_0.16, pcbRB6+mask
+resnet-50 | 384*128 |1536+256|0.883314|0.739106|mirro,RE| 32*2 |g_tri_0.16, pcbRB6+am0.3s15
+resnet-50 | 384*128 |1536+256|0.917458|0.791989|mirro,RE| 32*2 |g_tri_0.16, pcbRB6+am0.3s0
+resnet-50 | 384*128 |1536+256|0.940024|0.828990|mirro,RE| 32*2 |g_tri_0.16, pcbRB6, no additional stage-4
+resnet-50 | 384*128 |1536+256|0.939727|0.830806|mirro,RE| 48*3 |g_tri_0.16, pcbRB6
+resnet-50 | 384*128 |1536+256|0.939133|0.829087|mirro,RE| 32*2 |g_tri_0.16, pcbRB6, BN_nobias
 
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
 --- | --- | --- | --- | --- | --- | --- | ---
