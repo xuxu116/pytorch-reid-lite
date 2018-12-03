@@ -1,9 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 from torch.nn import init
 from torch.nn import Parameter
 
+#from batchnorm import BatchNorm2d
+#from batchnorm import BatchNorm1d
 
 class MarginInnerProduct(nn.Module):
     def __init__(self, config, in_units, out_units=-1, **kwargs):
@@ -38,7 +41,7 @@ class MarginInnerProduct(nn.Module):
         self.step = config["asoftmax_params"].get("step", 30000)
 
     def forward(self, x, labels):
-        w = torch.tanspose(self.weight, 0, 1)
+        w = torch.transpose(self.weight, 0, 1)
 
         x_norm = x.pow(2).sum(1).pow(0.5)
         w_norm = w.pow(2).sum(0).pow(0.5)
@@ -68,7 +71,7 @@ class MarginInnerProduct(nn.Module):
         current_idx = min(int(self.config["global_step"] / self.step),
             len(self.margin) - 1)
         current_margin = self.margin[current_idx]
-        if self.s == 0:
+        if self.s == 0 or True:
             cos_theta_margin = ((1 + current_margin) * cos_theta - current_margin) * x_norm.view(-1,1)
         else:
             cos_theta_margin = cos_theta - current_margin
@@ -117,71 +120,71 @@ class Pcb(nn.Module):
         self.num_part = n_parts
         feature_dim = feature_dim / n_parts
         self.branch = nn.ModuleList(
-            [nn.Sequential(nn.Linear(num_ftrs, feature_dim),
-                           nn.BatchNorm1d(feature_dim),
-                           nn.Dropout(p=0.5))
-             for i in range(self.num_part)]
+            [nn.Sequential(nn.Conv2d(num_ftrs, feature_dim,
+                kernel_size=1, stride=1),
+                        nn.BatchNorm2d(feature_dim),
+                        nn.Dropout(p=0.5))
+            for i in range(self.num_part)]
         )
         if self.feature_mask:
             self.mask = nn.Sequential(
-                    nn.Linear(num_ftrs, feature_dim*n_parts),
-                    nn.BatchNorm0d(feature_dim*n_parts),
+                    nn.Linear(num_ftrs, feature_dim * n_parts),
+                    nn.BatchNorm1d(feature_dim * n_parts),
                     nn.Dropout(p=0.5),
                     nn.Sigmoid())
-        #self.branch.apply(weights_init_kaiming)
 
         if is_training:
-            self.classifier = nn.ModuleList(
-                [nn.Linear(feature_dim, config["num_labels"])
-                 for i in range(self.num_part)]
-            )
             if config["asoftmax_params"]["margin"] == 0:
-                self.classifier_global = nn.Linear(feature_dim * n_parts,
-                        config["num_labels"])
+                self.classifier = nn.ModuleList(
+                    [nn.Linear(feature_dim, config["num_labels"])
+                     for i in range(self.num_part)]
+                )
             else:
                 import logging
                 logging.info("Using angle loss:%s" %
                             config["asoftmax_params"])
                                              
-                self.classifier_global = MarginInnerProduct(
-                        config, feature_dim * n_parts,
+                self.classifier=nn.ModuleList(
+                        [MarginInnerProduct(
+                        config, feature_dim,
                         config["num_labels"])
+                        for i in range(self.num_part)]
+                        )
 
     def forward(self, x, labels=None, return_feature=False):
         x_split = torch.chunk(x, self.num_part, 2)
         x_global = []   # store the concated feature
         y_split = []
         if self.feature_mask:
-            mask = F.avg_pool2d(x, kernel_size=x.size()[2:])
+            mask = F.avg_pool2d(x, kernel_size=x.size()[2:])  
             mask = mask.view(mask.size(0), -1)
             mask = self.mask(mask)
-        else:
+        else: 
             mask = 1
             
         for i in range(self.num_part):
-            x_temp = F.avg_pool2d(x_split[i], kernel_size=x_split[i].size()[2:])
-            x_temp_r = x_temp.view(x_temp.size(0), -1)
+            x_temp_r = F.adaptive_max_pool2d(feature_erasing(x_split[i], 0.0,
+                self.training), (1, 1))
+            #x_temp_r = x_temp.view(x_temp.size(0), -1)
             x_temp = self.branch[i](x_temp_r)
+            x_temp = x_temp.view(x_temp.size(0), -1)
+
             if self.training:
                 x_global.append(x_temp)
-                y_split.append(self.classifier[i](x_temp))
+                if self.config["asoftmax_params"]["margin"] == 0:
+                    y_split.append(self.classifier[i](x_temp))
+                else:
+                    y_split.append(self.classifier[i](x_temp, labels))
             else:
                 y_split.append(x_temp)
 
         if self.training or labels is not None:
-            if self.config["asoftmax_params"]["margin"] > 0:
-                y_split.append(self.classifier_global(
-                    torch.cat(x_global, dim=1) * mask, labels))
-            else:
-                y_split.append(self.classifier_global(torch.cat(x_global,
-                    dim=1) * mask))
-            
             if return_feature:
                 return torch.cat(x_global, dim=1) * mask, y_split
             else:
                 return y_split
         else:
-            return torch.cat(y_split, dim=1) * mask
+            return torch.cat(y_split, dim=1)
 
 
 class TripletLoss(nn.Module):
@@ -238,3 +241,16 @@ class TripletLoss(nn.Module):
         mean_dist_ap = dist_ap.mean()
 
         return loss, pull_ratio, active_triplet, mean_dist_an, mean_dist_ap
+
+
+def feature_erasing(feature, ratio=0.5, is_training=True):
+    if not is_training or ratio == 0:
+        return feature
+    n, c, h, w = feature.shape
+    mask = torch.ones_like(feature)
+    era_h = int(ratio * h)
+    rand_h = np.random.randint(0, high=(h-era_h), size=1)[0] 
+    mask[:,:,rand_h:rand_h + era_h, : ] = 0
+    feature = feature * mask
+    return feature
+

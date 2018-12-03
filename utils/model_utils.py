@@ -87,6 +87,6 @@ def restore_model(model_path, model, eval_mode=False):
 
     if len(mismatch_keys) > 0:
         logging.warn("[MODEL_RESTORE] number of mismatch_keys: %s"
-                     % len(mismatch_keys))
+                     % (mismatch_keys))
 
     model.load_state_dict(state_dict, strict=False)

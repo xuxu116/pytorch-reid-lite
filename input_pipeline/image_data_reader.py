@@ -51,8 +51,7 @@ def init_data_loader(config, num_processes=4, path_feature=None,
 
     # init data loader
     # configure sampling strategy
-    class_balanced_sampling = config["tri_loss_params"]["margin"] > 0 or \
-        config["batch_sampling_params"]["class_balanced"]
+    class_balanced_sampling = config["batch_sampling_params"]["class_balanced"]
     if class_balanced_sampling:
         logging.info("Using class_balanced sampling strategy.")
 
@@ -69,8 +68,7 @@ def init_data_loader(config, num_processes=4, path_feature=None,
         shuffle=shuffle,
         batch_size=batch_size,
         num_workers=num_processes,
-        batch_sampler=sampler,
-        drop_last=len(config["parallels"])>1
+        batch_sampler=sampler
     )
 
     # log training set info
@@ -89,33 +87,46 @@ def _init_transforms(img_h, img_w, aug_params):
 
     # Resize only
     transforms_list.append(transforms.Resize((img_h, img_w)))
+    
+    # padding zeros
+    if aug_params.get("padding_h", 0) > 0 and aug_params.get("padding_w", 0) > 0:
+        logging.info("using padding")
+        transforms_list.append(transforms.Pad((aug_params["padding_w"],
+                                            aug_params["padding_h"])))
 
     # random crop
     if aug_params.get("crop_h", 0) > 0 and aug_params.get("crop_w", 0) > 0:
+        logging.info("using randomCrop")
         transforms_list.append(transforms.RandomCrop((aug_params["crop_h"],
                                                       aug_params["crop_w"])))
     # Randomly flip the image horizontally.
     if aug_params["mirror"]:
+        logging.info("using mirro")
         transforms_list.append(transforms.RandomHorizontalFlip())
 
     # Randomly rotate the image
     if aug_params["rotation"] != 0:
+        logging.info("using rotation")
         degrees = aug_params["rotation"]
         transforms_list.append(transforms.RandomRotation(degrees))
 
     # Random erasing
     if aug_params.get("random_erasing", False):
+        logging.info("using randomErasing")
         transforms_list.append(RandomErasing())
 
     # Color jiterring
     if aug_params.get("colour_jiterring", False):
+        logging.info("using colour_jiterring")
         transforms_list.append(transforms.ColorJitter(0.1,0.1,0.1))
 
     if aug_params.get("gaussian_noise", True):
+        logging.info("using gaussian_noise")
         transforms_list.append(AddGaussianNoise())
     # Convert the images to tensors and perform normalization
 
     if aug_params.get("imagenet_static", False):
+        logging.info("using imagenet_static")
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                         std=[0.229, 0.224, 0.225])
     else:
@@ -201,3 +212,4 @@ class AddGaussianNoise(object):
         # Convert back to PIL image
         img = PIL.Image.fromarray(img)
         return img
+

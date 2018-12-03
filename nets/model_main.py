@@ -1,9 +1,14 @@
 import torch.nn as nn
+import torch
 from torch.nn import init
 import torch.nn.functional as F
-
+import numpy as np
 import nets_factory
 import layers
+
+from layers import feature_erasing
+#from batchnorm import BatchNorm2d
+#from batchnorm import BatchNorm1d
 
 
 def weights_init_kaiming(m):
@@ -47,6 +52,23 @@ class ft_net(nn.Module):
 
         # Embedding layer
         num_ftrs = model_ft.num_ftrs
+        feature_g_dim = config["model_params"]["feature_gobal_dim"]
+        self.fc_g = nn.Sequential(
+            nn.Linear(num_ftrs, feature_g_dim),
+            nn.BatchNorm1d(feature_g_dim),
+            nn.Dropout(p=0.5)
+            )
+        self.classifier_g = nn.Linear(
+            feature_g_dim,
+            config["num_labels"])
+        self.classifier_g.apply(weights_init_classifier)
+        if self.feature_mask:
+            self.mask_g = nn.Sequential(
+                nn.Linear(num_ftrs, feature_g_dim),
+                nn.BatchNorm1d(feature_g_dim),
+                nn.Dropout(p=0.5),
+                nn.Sigmoid())
+
         if pcb_n_parts > 0:
             self.Pcb = layers.Pcb(config, num_ftrs, feature_dim,
                                   pcb_n_parts, is_training=is_training,
@@ -55,7 +77,8 @@ class ft_net(nn.Module):
             self.fc = nn.Sequential(
                 nn.Linear(num_ftrs, feature_dim),
                 nn.BatchNorm1d(feature_dim),
-                nn.Dropout(p=0.5))
+                nn.Dropout(p=0.5)
+                )
             #self.fc = nn.Linear(num_ftrs, feature_dim)
             if self.feature_mask:
                 self.mask = nn.Sequential(
@@ -87,9 +110,28 @@ class ft_net(nn.Module):
 
     def forward(self, x, labels=None, return_feature=False):
         embedding = self.model(x)
-        embedding = self.dropout(embedding)
+
+        #embedding_g = self.dropout(embedding_g)
+        embedding_g = feature_erasing(embedding, 0, self.training) 
+        embedding_g = F.adaptive_max_pool2d(embedding_g, (1, 1)) 
+        embedding_g = embedding_g.view(embedding_g.size(0), -1)
+        embedding_g = self.fc_g(embedding_g)
+        if self.feature_mask and False:
+            mask_g = F.adaptive_avg_pool2d(embedding_gr, (1, 1)) 
+            mask_g = mask_g.view(mask_g.size(0), -1)
+            mask_g = self.mask_g(mask_g)
+            embedding_g = embedding_g * mask_g
+            
+
+        #embedding = self.dropout(embedding)
         if self.pcb_n_parts > 0:
-            return self.Pcb(embedding, labels, return_feature=return_feature)
+            if self.training:
+                return self.Pcb(embedding, labels, return_feature=return_feature),\
+                        self.classifier_g(embedding_g), embedding_g
+            else:
+                return torch.cat([self.Pcb(embedding, labels,
+                        return_feature=return_feature), embedding_g], dim=1)
+
 
         # Global average pool
         embedding = F.avg_pool2d(embedding, kernel_size=embedding.size()[2:])

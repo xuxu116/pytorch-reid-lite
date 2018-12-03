@@ -7,54 +7,59 @@
         "scale": 0
     },
     "batch_sampling_params": {
-        "K": 4,
+        "K": 2,
         "P": 32,
-        "batch_size": 16,
-        "class_balanced": false
+        "batch_size":64,
+        "class_balanced": true,
+        "softmax_only":false
     },
-    "batches_dir": "/world/data-gpu-94/sysu-reid/market_dataset",
+    "batches_dir": "/world/data-gpu-94/sysu-reid/person-reid-data/Market-1501/Market-1501-v15.09.15/pytorch/train_all",
     "data_augmentation": {
         "colour_jitering": false,
-        "crop_h": 0,
-        "crop_w": 0,
+        "crop_h": 384,
+        "crop_w": 128,
+        "padding_h": 10,
+        "padding_w": 10,
         "mirror": true,
         "random_erasing": true,
         "gaussian_noise": false,
         "imagenet_static": true,
         "rotation": 0
     },
-    "epochs": 120,
+    "epochs": 4000,
     "evaluation_params": {
         "type": "market_evaluate",
         "step": null, 
         "epoch": 20 
     },
     "fine_tune": false,
+    "focal_loss": false,
     "imagenet_pretrain": true,
-    "img_h": 256,
+    "img_h": 384,
     "img_w": 128,
     "lr": {
         "base_lr": 0.01,
         "decay_gamma": 0.1,
-        "decay_step": 40,
+        "decay_step": [40, 80],
         "warmup_epoch": 20,
         "fc_lr": 0.1
     },
     "model_params": {
-        "feature_dim": 256,
+        "feature_dim": 1536,
         "model": "resnet_50",
-        "pcb_n_parts": 0,
-        "random_drop_branchs": 0,
+        "pcb_n_parts": 6,
+        "random_drop_branchs": 6,
         "last_conv_stride": 1,
-        "feature_mask": false
+        "feature_mask": false,
+        "feature_gobal_dim": 256
     },
     "gan_params": {
         "input_dim": 0,
         "batch_size": 128,
         "adv_train": false,
-        "alone_train": true,
+        "alone_train": false,
         "lr": 0.0002,
-        "beta1": 0.5,
+        "beta1": 0.0,
         "ngf": 64,
         "ndf": 32,
         "preheating": 0,
@@ -62,17 +67,17 @@
         "pretrain_snapshot_g": "",
         "d_update_freq":1.0
     },
-    "num_preprocess_workers": 4,
+    "num_preprocess_workers": 8,
     "optimizer": "sgd",
     "parallels": [
-        2
+       0
     ],
     "pretrain_snapshot": "",
     "tri_loss_params": {
-        "margin": 0,
-        "use_adaptive_weight": true,
-        "lambda_tri": 10,
-        "lambda_cls": 0
+        "margin": 0.16,
+        "use_adaptive_weight": false,
+        "lambda_tri": 1,
+        "lambda_cls": 1
     }, 
     "weight_decay": 5e-4,
     "working_dir": ""

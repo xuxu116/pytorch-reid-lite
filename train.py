@@ -79,6 +79,13 @@ def _run_train_loop(data_loader, config, net,
     gan_params = config["gan_params"] 
     use_tri_loss = "tri_loss" in loss_dict
     unlabel_buffer = None
+    logging.info("Using loss: %s" %loss_dict.keys())
+
+    # first decay
+    lr_scheduler.step()
+    for param_group in optimizer.param_groups:
+        logging.info("current lr: %s" % param_group['lr'])
+    
     if kwargs.has_key("netG") and \
         config["asoftmax_params"].get("unlabel_fold", 0) > 0:
         unlabel_bs = config["batch_size"] 
@@ -87,21 +94,33 @@ def _run_train_loop(data_loader, config, net,
                 unlabel_size).cuda()          
         current_fold = 0
 
-    if use_tri_loss or config["batch_sampling_params"]["class_balanced"]:
-        assert config["lr"]["decay_step"] > 2000, \
-            "lr decay_step is too small for class balance sampling."
+    if False and use_tri_loss and config["batch_sampling_params"]["class_balanced"]:
+        #assert config["lr"]["decay_step"] > 2000, \
+        #    "lr decay_step is too small for class balance sampling."
 
         # Tri loss params
         tri_epoch = 1
         iter_fun = run_iter_triplet_loss if use_tri_loss else run_iter_softmax
 
         while True:
+            if config["lr"]["warmup_epoch"] > 0 and epoch < \
+                config["lr"]["warmup_epoch"]:
+                for param_group in optimizer.param_groups:
+                    lr_decay = (epoch + 1) * 1.0 / config["lr"]["warmup_epoch"]
+                    param_group['lr'] = lr_decay * param_group['initial_lr']
+                    logging.info("Warning up, current lr: %s" % param_group['lr'])
+            elif epoch - config["lr"]["warmup_epoch"] in config["lr"]["decay_step"]:
+                logging.info("decay lr")
+                lr_scheduler.step()
+                for param_group in optimizer.param_groups:
+                    logging.info("current lr: %s" % param_group['lr'])
             data_loader_iter = iter(data_loader)
+         
             for step in range(len(data_loader)):
                 iter_start_time = time.time()
                 images, labels = data_loader_iter.next()
                 io_finished_time = time.time()
-                lr_scheduler.step()
+                #lr_scheduler.step()
                 iter_fun(
                     images=images.cuda(),
                     labels=labels.cuda(),
@@ -152,8 +171,11 @@ def _run_train_loop(data_loader, config, net,
                     lr_decay = (epoch + 1) * 1.0 / config["lr"]["warmup_epoch"]
                     param_group['lr'] = lr_decay * param_group['initial_lr']
                     logging.info("Warning up, current lr: %s" % param_group['lr'])
-            elif epoch < config["epochs"]+config["lr"]["warmup_epoch"]:
+            elif epoch - config["lr"]["warmup_epoch"] in config["lr"]["decay_step"]:
+                logging.info("decay lr")
                 lr_scheduler.step()
+                for param_group in optimizer.param_groups:
+                    logging.info("current lr: %s" % param_group['lr'])
 
             
             # gan trainging
@@ -270,6 +292,8 @@ def _run_train_loop(data_loader, config, net,
             # evaluate the model after each epoch
             if epoch > 0 and \
                     epoch % config["evaluation_params"]["epoch"] == 0:
+                for param_group in optimizer.param_groups:
+                    logging.info("current lr: %s" % param_group['lr'])
                 model_utils.save_and_evaluate(net, config, evaluate_func)
             #if kwargs.has_key("netG"):
             #    model_utils.save_and_evaluate(kwargs["netG"], config, None,
@@ -296,9 +320,10 @@ def train(config, data_loader, gan_loader=None):
 
     # Optimizer and learning rate
     optimizer = _get_optimizer(config, net)
+    logging.info("decay step: %s"%config["lr"]["decay_step"])
     lr_scheduler = optim.lr_scheduler.StepLR(
         optimizer,
-        step_size=config["lr"]["decay_step"],
+        step_size=1,
         gamma=config["lr"]["decay_gamma"])
 
     # Set data parallel
@@ -396,7 +421,10 @@ def main():
 
         # Configure log file and place json to sub working dir
         log_file = open(os.path.join(sub_working_dir, "train_log"), "w", 1)
-        shutil.copy(args.config_path, sub_working_dir)
+        try:
+            shutil.copy(args.config_path, sub_working_dir)
+        except:
+            logging.info("copy params failed")
 
         # Start training as a subprocess
         call_args = "python train.py --config_path %s --sub_working_dir %s" % \
@@ -413,6 +441,7 @@ def main():
     else:
         config["batch_size"] = config["batch_sampling_params"]["batch_size"] * \
             len(config["parallels"])
+        logging.info("using batchsize %d" % (config["batch_size"]))
         data_loader = init_data_loader(
             config,
             num_processes=config.get("num_preprocess_workers",
@@ -429,6 +458,13 @@ def main():
 
         # Creat tf_summary writer
         config["tensorboard_writer"] = SummaryWriter(args.sub_working_dir)
+
+        if config["batch_sampling_params"].get("class_balanced", False):
+            for i in range(len(config["lr"]["decay_step"])):
+                config["lr"]["decay_step"][i] *= 10    
+            config["lr"]["warmup_epoch"] *= 10
+            config["evaluation_params"]["epoch"] *= 10
+            config["epochs"] *= 10
 
         # Start training
         train(config, data_loader, gan_loader)

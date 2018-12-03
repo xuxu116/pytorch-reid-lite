@@ -9,9 +9,9 @@ import numpy as np
 
 from model_utils import save_and_evaluate
 from nets import layers
+from nets.dcgan import calc_gradient_penalty
 
-
-def _get_xent_loss(config, criterion, outputs, labels, step=None):
+def _get_xent_loss(config, criterion, outputs, labels, epoch=0):
     if config["model_params"].get("pcb_n_parts", 0) == 0:
         loss = criterion(outputs, labels).mean()
     else:
@@ -20,10 +20,23 @@ def _get_xent_loss(config, criterion, outputs, labels, step=None):
         if drop_b > 0:
             n_parts = len(outputs)
             branch_list = range(n_parts)
+            drop_n = np.random.randint(0, high=n_parts, size=1)[0] 
             erase = np.random.randint(0, high=n_parts, size=drop_b)
             selected = set(branch_list) - set(erase)
+            if len(selected) == 0:
+                selected = [np.random.randint(0, high=n_parts, size=1)[0]]
             outputs = [outputs[i] for i in selected]
-        loss = sum([criterion(output, labels) for output in outputs])
+        loss = [criterion(output, labels) for output in outputs]
+
+        update_max = False
+        if update_max and epoch > 20:
+            loss_val = [i.item() for i in loss]
+            max_idx = loss.index(max(loss_val))
+            loss = loss[max_idx]
+        else:
+            loss = sum(loss)
+
+
     return loss
 
 
@@ -36,10 +49,15 @@ def _compute_batch_acc(config, outputs, labels, step=None, class_balanced=False)
         batch_size = outputs.shape[0]
     else:
         batch_size = outputs[0].shape[0]
-    _, preds = torch.max(outputs.data, 1) \
-        if config["model_params"].get("pcb_n_parts", 0) == 0 \
-        else torch.max(torch.mean(torch.stack(outputs), dim=0).data, 1)
-    batch_acc = torch.sum(preds == labels).item() / batch_size
+    if config["model_params"].get("pcb_n_parts", 0) == 0:
+        _, preds = torch.max(outputs.data, 1) 
+        batch_acc = torch.sum(preds == labels).item() / batch_size
+    else:
+        batch_acc = 0
+        for output in outputs:
+            _, preds = torch.max(output.data, 1) 
+            batch_acc += torch.sum(preds == labels).item() / batch_size
+        batch_acc /= len(outputs)
 
     return batch_acc
 
@@ -73,14 +91,14 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
     mone = one * -1
     b_size = images.size(0)
 
-    for p in netD.parameters():
-        p.data.clamp_(-0.01, 0.01)
+    #for p in netD.parameters():
+    #    p.data.clamp_(-0.01, 0.01)
 
     gan_params = config["gan_params"]
     nz = gan_params["input_dim"]
     d_update_freq = gan_params.get("d_update_freq", 1)
     update_d = (random.random() < d_update_freq)
-    update_adv = (random.random() < 0.3)
+    update_adv = (random.random() < 1.0)
     netD.zero_grad()
     label_cls = torch.full((b_size,), real_label, dtype=torch.float).cuda()
 
@@ -96,7 +114,10 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
     label_cls.fill_(fake_label)
     fake = netG(noise)
     errD_fake_cls, D_G_z1 = _get_loss_d(fake.detach(), netD, label_cls, loss)
+    gradient_penalty = calc_gradient_penalty(netD, images.data, fake.data)
+
     if update_d:
+        gradient_penalty.backward(retain_graph=True)
         errD_fake_cls.backward(one, retain_graph=True)
         optimizerD.step()
 
@@ -125,7 +146,9 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
         if update_adv and accG_REID > 0.7:
             net.zero_grad()
             labels_shift = labels[:batch_size] + config["num_labels"]
-            errG_id_ADV, accG_ADV = get_loss_reid(fake_f.detach(), labels_shift, net,
+            img_input = torch.cat([images[:batch_size], fake_f.detach()], 0)
+            label_input = torch.cat([labels[:batch_size], labels_shift], 0)
+            errG_id_ADV, accG_ADV = get_loss_reid(img_input, label_input, net,
                     loss_dict["xent_loss"], config)
             errG_id_ADV.backward()
             optimizer.step()
@@ -273,18 +296,51 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
     # Forward and backward
     optimizer.zero_grad()
     feature = None
-    feature, outputs = net(images, labels=labels, return_feature=True)
+    (feature, outputs), logit_g, feature_g = net(images, labels=labels, return_feature=True)
+    outputs.append(logit_g)
     if unlabel_buffer is not None:
         logit_un = feature.mm(unlabel_buffer) + net.classifier.bias.mean()
         outputs = torch.cat([outputs, logit_un], 1)
-    criterion = loss_dict["xent_loss"]
-    loss = _get_xent_loss(config, criterion, outputs, labels, step)
-
+    
+    loss_cls = 0
+    loss_tri = 0
+    if "xent_loss" in loss_dict:
+        criterion = loss_dict["xent_loss"]
+        loss_cls = _get_xent_loss(config, criterion, outputs, labels, epoch)
+        loss_cls *= config["tri_loss_params"]["lambda_cls"] 
+    if "tri_loss" in loss_dict:
+        tri_loss = loss_dict["tri_loss"]
+        #f_norm = feature.pow(2).sum(1).pow(0.5)
+        #feature = feature / f_norm.view(-1,1) * 13
+        """
+        features = torch.chunk(feature, 7, dim=1)
+        loss_tri_sum = 0
+        for feature in features:
+            loss_tri, pull_ratio, active_triplet,\
+                mean_dist_an, mean_dist_ap,\
+                = tri_loss(feature, labels, step)
+            loss_tri *= config["tri_loss_params"]["lambda_tri"]
+            loss_tri_sum += loss_tri
+        loss_tri = loss_tri_sum
+        """
+        loss_tri, pull_ratio, active_triplet,\
+            mean_dist_an, mean_dist_ap,\
+            = tri_loss(feature, labels, step)
+        loss_tri_g, pull_ratio, active_triplet,\
+            mean_dist_an, mean_dist_ap,\
+            = tri_loss(feature_g, labels, step)
+        loss_tri += loss_tri_g
+        loss_tri *= config["tri_loss_params"]["lambda_tri"]
+        #if loss_tri.item() < 0.000001:
+        #    return
+    loss = loss_cls + loss_tri
     loss.backward()
     optimizer.step()
+    loss_tri = loss_tri.item() if loss_tri !=0 else 0
+    loss_cls = loss_cls.item() if loss_cls !=0 else 0
 
     log_step = 50 if config.get("model_parallel", False) else 50
-    if step > 0 and step % log_step == 0:
+    if step % log_step == 0:
         step_finished_time = time.time()
         gpu_time = float(step_finished_time - io_finished_time)
         io_time = float(io_finished_time - iter_start_time)
@@ -293,15 +349,15 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
         batch_acc = _compute_batch_acc(config, outputs, labels, step)
 
         logging.info(
-            "epoch [%.3d] iter = %d loss = %.4f acc = %.5f example/sec = %.3f, "
+            "epoch [%.3d] iter = %d loss_cls = %.4f loss_tri = %.4f acc = %.5f example/sec = %.3f, "
             "io_percentage = %.3f" %
-            (epoch, step, loss.item(), batch_acc, example_per_second,
+            (epoch, step, loss_cls, loss_tri, batch_acc, example_per_second,
              io_percentage)
         )
 
         # Write summary
         config["tensorboard_writer"].add_scalar("loss",
-                                                loss.item(),
+                                                loss_cls,
                                                 config["global_step"])
 
         config["tensorboard_writer"].add_scalar("batch_accuray",
@@ -403,7 +459,8 @@ def run_iter_triplet_loss(images, labels, config, net, loss_dict,
 
 
 def get_loss_dict(config):
-    use_tri_loss = config["tri_loss_params"]["margin"] > 0
+    use_tri_loss = config["tri_loss_params"]["margin"] > 0 and \
+            config["batch_sampling_params"]["class_balanced"]
     loss_dict = {}
     if use_tri_loss:
         logging.info("Using Triplet Loss: %s" % config["tri_loss_params"])
@@ -414,6 +471,11 @@ def get_loss_dict(config):
 
     if not use_tri_loss \
             or (use_tri_loss and config["tri_loss_params"]["lambda_cls"] > 0):
-        loss_dict["xent_loss"] = nn.CrossEntropyLoss()
+        if config.get("focal_loss", False):
+            logging.info("using focal loss...")
+            from nets.FocalLoss import FocalLoss
+            loss_dict["xent_loss"] = FocalLoss(gamma=2.0)
+        else:
+            loss_dict["xent_loss"] = nn.CrossEntropyLoss()
 
     return loss_dict
