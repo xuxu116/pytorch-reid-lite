@@ -15,12 +15,12 @@ def _get_xent_loss(config, criterion, outputs, labels, epoch=0):
     if config["model_params"].get("pcb_n_parts", 0) == 0:
         loss = criterion(outputs, labels).mean()
     else:
-        # random erase several branchs 
+        # random erase several branchs
         drop_b = config["model_params"].get("random_drop_branchs", 0)
         if drop_b > 0:
             n_parts = len(outputs)
             branch_list = range(n_parts)
-            drop_n = np.random.randint(0, high=n_parts, size=1)[0] 
+            drop_n = np.random.randint(0, high=n_parts, size=1)[0]
             erase = np.random.randint(0, high=n_parts, size=drop_b)
             selected = set(branch_list) - set(erase)
             if len(selected) == 0:
@@ -50,12 +50,12 @@ def _compute_batch_acc(config, outputs, labels, step=None, class_balanced=False)
     else:
         batch_size = outputs[0].shape[0]
     if config["model_params"].get("pcb_n_parts", 0) == 0:
-        _, preds = torch.max(outputs.data, 1) 
+        _, preds = torch.max(outputs.data, 1)
         batch_acc = torch.sum(preds == labels).item() / batch_size
     else:
         batch_acc = 0
         for output in outputs:
-            _, preds = torch.max(output.data, 1) 
+            _, preds = torch.max(output.data, 1)
             batch_acc += torch.sum(preds == labels).item() / batch_size
         batch_acc /= len(outputs)
 
@@ -102,11 +102,11 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
     netD.zero_grad()
     label_cls = torch.full((b_size,), real_label, dtype=torch.float).cuda()
 
-    #update D with real images 
+    #update D with real images
     errD_real_cls, D_x = _get_loss_d(images, netD, label_cls, loss)
     if update_d:
         errD_real_cls.backward(mone, retain_graph=False)
-    
+
     #updge D with fake images
     noise = torch.randn(b_size, nz).cuda()
     noise_norm = noise.pow(2).sum(1).pow(0.5).view(-1, 1)
@@ -125,7 +125,7 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
     netG.zero_grad()
     netD.zero_grad()
     label_cls.fill_(real_label)
-    errG_cls, D_G_z2 = _get_loss_d(fake, netD, label_cls, loss) 
+    errG_cls, D_G_z2 = _get_loss_d(fake, netD, label_cls, loss)
     batch_size = config["batch_size"]
     batch_size = images.shape[0]
     if gan_params["adv_train"] and net is not None and \
@@ -134,7 +134,7 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
         noise_f = feature + torch.randn_like(feature) * 0.01
         noise_f_norm = noise_f.pow(2).sum(1).pow(0.5).view(-1, 1)
         noise_f = noise_f / noise_f_norm.view(-1, 1)
-        fake_f = netG(noise_f) 
+        fake_f = netG(noise_f)
         errG_cls_f, _ = _get_loss_d(fake_f, netD, label_cls[:batch_size], loss)
         errG_id_REID, accG_REID = get_loss_reid(fake_f, labels[:batch_size], net,
                 loss_dict["xent_loss"], config)
@@ -157,7 +157,7 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
                     " loss_id:%.3f, acc_fake_id:%.3f"
                     %(epoch, step, errG_id_REID.item(), accG_REID,
                         errG_id_ADV, accG_ADV))
-        
+
         if step > 0 and step % 10 == 0:
             logging.info("epoch [%.3d] iter = %d errG_id_REID:%.3f, accG_REID:%.3f"
                     " loss_id:%.3f, acc_fake_id:%.3f"
@@ -175,7 +175,7 @@ def run_iter_gan(images, labels, step, epoch, config, netG, netD,
                 errG_cls.item(), D_x, D_G_z1, D_G_z2)
             )
 
-     
+
 
 
 def run_iter_adv(images, labels, features, step, epoch, config, net, loss_dict,
@@ -194,10 +194,10 @@ def run_iter_adv(images, labels, features, step, epoch, config, net, loss_dict,
     netD.zero_grad()
     label_cls = torch.full((b_size,), real_label, dtype=torch.float).cuda()
 
-    #update D with real images 
+    #update D with real images
     errD_real_cls, D_x = _get_loss_d(images, netD, label_cls, loss_gan)
     errD_real_cls.backward(retain_graph=False)
-    
+
     #updge D with fake images
     noise = features.detach().cuda()
     noise_norm = noise.pow(2).sum(1).pow(0.5).view(-1, 1)
@@ -214,16 +214,16 @@ def run_iter_adv(images, labels, features, step, epoch, config, net, loss_dict,
     netG.zero_grad()
     netD.zero_grad()
     label_cls.fill_(real_label)
-    errG_cls, D_G_z2 = _get_loss_d(fake, netD, label_cls, loss_gan) 
+    errG_cls, D_G_z2 = _get_loss_d(fake, netD, label_cls, loss_gan)
     errG_id_REID, accG_REID = get_loss_reid(fake, labels, net, loss_gid, config)
     if update_adv:
         errG_id_REID.backward(retain_graph=True)
     errG_cls.backward(retain_graph=True)
     optimizerG.step()
 
-    # learn from adversarial sample 
+    # learn from adversarial sample
     batch_acc = 0
-    if update_adv: 
+    if update_adv:
         net.zero_grad()
         labels_shift = labels + config["num_labels"]
         outputs = net(fake.detach(), labels=labels_shift, return_feature=False)
@@ -235,11 +235,11 @@ def run_iter_adv(images, labels, features, step, epoch, config, net, loss_dict,
     #loss_id.backward()
     if update_adv:
         logging.info("loss_r:%.3f loss_f = %.3f loss_g = %.3f D_r = %.3f "
-                "D_f = %.3f|%.3f G_att_acc:%.3f, att_loss:%.3f, adv_acc:%3f" % 
+                "D_f = %.3f|%.3f G_att_acc:%.3f, att_loss:%.3f, adv_acc:%3f" %
                 (errD_real_cls.item(), errD_fake_cls.item(),errG_cls.item(),
                     D_x, D_G_z1, D_G_z2, accG_REID, errG_id_REID.item(),
                     batch_acc))
-    
+
     """
     optimizer.zero_grad()
     real_label = 1
@@ -252,10 +252,10 @@ def run_iter_adv(images, labels, features, step, epoch, config, net, loss_dict,
     netD.zero_grad()
     label_cls = torch.full((b_size,), real_label, dtype=torch.float).cuda()
 
-    #update D with real images 
+    #update D with real images
     errD_real_cls, D_x = _get_loss_d(images, netD, label_cls, loss_gan)
     errD_real_cls.backward(retain_graph=False)
-    
+
     #updge D with fake images
     noise = features.cuda()
     noise_norm = noise.pow(2).sum(1).pow(0.5).view(-1, 1)
@@ -265,19 +265,19 @@ def run_iter_adv(images, labels, features, step, epoch, config, net, loss_dict,
     errD_fake_cls, D_G_z1 = _get_loss_d(fake.detach(), netD, label_cls, loss_gan)
     errD_fake_cls.backward(retain_graph=True)
     optimizerD.step()
-    
+
     #updage G
     netG.zero_grad()
     netD.zero_grad()
     label_cls.fill_(real_label)
-    errG_cls, D_G_z2 = _get_loss_d(fake, netD, label_cls, loss_gan) 
+    errG_cls, D_G_z2 = _get_loss_d(fake, netD, label_cls, loss_gan)
     errG_cls.backward(retain_graph=True)
     optimizerG.step()
     errG_id_REID, accG_REID = get_loss_reid(fake, labels, net, loss_gid, config)
     errG_id_REID.backward(retain_graph=True)
 
     optimizerG.step()
-     
+
     # Forward and backward
     labels_shift = labels + config["num_labels"]
     outputs = net(fake.detach(), labels=labels_shift, return_feature=False)
@@ -296,18 +296,21 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
     # Forward and backward
     optimizer.zero_grad()
     feature = None
-    (feature, outputs), logit_g, feature_g = net(images, labels=labels, return_feature=True)
-    outputs.append(logit_g)
+    if config["model_params"]["pcb_n_parts"] > 0:
+        (feature, outputs), logit_g, feature_g = net(images, labels=labels, return_feature=True)
+        outputs.append(logit_g)
+    else:
+        feature, outputs = net(images, labels=labels, return_feature=True)
     if unlabel_buffer is not None:
         logit_un = feature.mm(unlabel_buffer) + net.classifier.bias.mean()
         outputs = torch.cat([outputs, logit_un], 1)
-    
+
     loss_cls = 0
     loss_tri = 0
     if "xent_loss" in loss_dict:
         criterion = loss_dict["xent_loss"]
         loss_cls = _get_xent_loss(config, criterion, outputs, labels, epoch)
-        loss_cls *= config["tri_loss_params"]["lambda_cls"] 
+        loss_cls *= config["tri_loss_params"]["lambda_cls"]
     if "tri_loss" in loss_dict:
         tri_loss = loss_dict["tri_loss"]
         #f_norm = feature.pow(2).sum(1).pow(0.5)
@@ -326,10 +329,11 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
         loss_tri, pull_ratio, active_triplet,\
             mean_dist_an, mean_dist_ap,\
             = tri_loss(feature, labels, step)
-        loss_tri_g, pull_ratio, active_triplet,\
-            mean_dist_an, mean_dist_ap,\
-            = tri_loss(feature_g, labels, step)
-        loss_tri += loss_tri_g
+        if config["model_params"]["pcb_n_parts"] > 0:
+            loss_tri_g, pull_ratio, active_triplet,\
+                mean_dist_an, mean_dist_ap,\
+                = tri_loss(feature_g, labels, step)
+            loss_tri += loss_tri_g
         loss_tri *= config["tri_loss_params"]["lambda_tri"]
         #if loss_tri.item() < 0.000001:
         #    return
@@ -371,7 +375,7 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
             and config["evaluation_params"].get("step", None) \
             and step % config["evaluation_params"]["step"] == 0:
         save_and_evaluate(net, config, evaluate_func, save_ckpt=False)
-    
+
     return feature
 
 

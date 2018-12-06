@@ -165,7 +165,7 @@ def run_eval(config):
         batch_size = config["batch_size"]
 
     # configure data_loader
-    market1501_origin = "/world/data-gpu-57/vincentfung13/market_pytorch_eval"
+    market1501_origin = "/world/data-gpu-94/vincentfung13/market_pytorch_eval"
     dataloaders = {
         x: MarketDataLoader(
             os.path.join(market1501_origin, x), batch_size=batch_size,
