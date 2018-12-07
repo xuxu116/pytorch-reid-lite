@@ -119,6 +119,7 @@ resnet-50 | 256*128 |256*1 |0.893112|0.740011|mirro | 32*1 | add BN, Dropout aft
 resnet-50 | 256*128 |256*1 |0.898753|0.749818|mirro,RE | 32*1 | 120 epoch, decay per 40
 resnet-50 | 256*128 |256*1 |0.907660|0.763313|mirro,RE | 32*1 | warm-up before 20 epoch
 resnet-50 | 256*128 |256*1 |0.923100|0.782874|mirro,RE | 8*4 | 700+ epochs
+resnet-50 | 256*128 |256*1 |0.934382|0.819815|mirro,RE | 8*4 | spectral transf 0.5
 resnet-50 | 256*128 |256*1 |0.905879|0.756945|mirro,RE | 32*1 | am=0.0
 resnet-50 | 256*128 |256*1 |0.898753|0.756945|mirro,RE | 32*1 | am=0.0(w normalized)
 resnet-50 | 256*128 |256*1 |0.895190|0.756697|mirro,RE | 32*1 | am=0.1
