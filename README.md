@@ -45,6 +45,28 @@ You can visualize your training progress with tensorboardX (a pytorch integratio
 cd ~/.local/bin
 ./tensorboard --logdir=YOUR_SUB_WORKING_DIR --port=YOUR_PORT
 ```
+## Tips summary
+Which benefits:
+ - PCB structure
+ - PCB randomly update
+ - batchnorm
+ - random erasing, zero paddding crop
+ - warm-up learning rate
+ - global branch
+ - small batchsize
+
+Which might helps:
+ - feature erasing
+ - feature mask
+ - tri-loss
+ - balanced sampling
+ - multi-gpu training (differs in BN layer)
+ 
+ Not working:
+ - adam
+ - am-softmax
+ - bias in FC layer or BN
+ 
 
 ## Baselines
 backbone | imgSize | PCB | rank1  | map | aug. | batchsize | comments
@@ -119,8 +141,9 @@ resnet-50 | 256*128 |256*1 |0.893112|0.740011|mirro | 32*1 | add BN, Dropout aft
 resnet-50 | 256*128 |256*1 |0.898753|0.749818|mirro,RE | 32*1 | 120 epoch, decay per 40
 resnet-50 | 256*128 |256*1 |0.907660|0.763313|mirro,RE | 32*1 | warm-up before 20 epoch
 resnet-50 | 256*128 |256*1 |0.923100|0.782874|mirro,RE | 8*4 | 700+ epochs
+resnet-50 | 256*128 |256*1 |0.931116|0.813940|mirro,RE | 8*4 |pad_zero_crop
 resnet-50 | 256*128 |256*1 |0.934382|0.819815|mirro,RE | 8*4 | spectral transf 0.5, pad_6
-resnet-50 | 256*128 |256*1 |0.933789|0.820289|mirro,RE | 8*4 | st_0.5_norm, pad_6
+resnet-50 | 256*128 |256*1 |0.933789|0.821830|mirro,RE | 8*4 | st_0.5_norm, pad_6
 resnet-50 | 256*128 |256*1 |0.900831|0.774981|mirro,RE | 16*8 | spectral st_0.5_norm, pad_6
 resnet-50 | 256*128 |256*1 |0.922506|0.811486|mirro,RE | 8*4 | tri_m=0.16, pad_6
 resnet-50 | 256*128 |256*1 |0.921912|0.801184|mirro,RE | 16*2 | tri_m=0.16, pad_6
