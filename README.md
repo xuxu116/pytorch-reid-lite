@@ -5,7 +5,7 @@ currently it provides basic protocols for model training, evaluation and deployi
 
 ## Features
 
-- Spectral feature transform for post-processing(https://arxiv.org/abs/1811.11405).
+- Spectral feature transform(rank1: 0.945071|map: 0.827155 w\o post-processing)(https://arxiv.org/abs/1811.11405).
 - PCB structure (https://arxiv.org/abs/1711.09349); Improved training strategy
 - GAN related person generator(unstable)
 - AM softmax & triplet loss
@@ -145,9 +145,8 @@ resnet-50 | 256*128 |256*1 |0.893112|0.740011|mirro | 32*1 | add BN, Dropout aft
 resnet-50 | 256*128 |256*1 |0.898753|0.749818|mirro,RE | 32*1 | 120 epoch, decay per 40
 resnet-50 | 256*128 |256*1 |0.907660|0.763313|mirro,RE | 32*1 | warm-up before 20 epoch
 resnet-50 | 256*128 |256*1 |0.923100|0.782874|mirro,RE | 8*4 | 700+ epochs
-resnet-50 | 256*128 |256*1 |0.931116|0.813940|mirro,RE | 8*4 |pad_zero_crop
-resnet-50 | 256*128 |256*1 |0.934382|0.819815|mirro,RE | 8*4 | spectral transf 0.5, pad_6
-resnet-50 | 256*128 |256*1 |0.933789|0.821830|mirro,RE | 8*4 | st_0.5_norm, pad_6
+resnet-50 | 256*128 |256*1 |0.931116|0.819774|mirro,RE | 8*4 |pad_zero_crop, no dropout
+resnet-50 | 256*128 |256*1 |0.945071|0.827155|mirro,RE | 8*4 | st0.3, fine-tuned
 resnet-50 | 256*128 |256*1 |0.900831|0.774981|mirro,RE | 16*8 | spectral st_0.5_norm, pad_6
 resnet-50 | 256*128 |256*1 |0.922506|0.811486|mirro,RE | 8*4 | tri_m=0.16, pad_6
 resnet-50 | 256*128 |256*1 |0.921912|0.801184|mirro,RE | 16*2 | tri_m=0.16, pad_6
