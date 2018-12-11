@@ -76,7 +76,7 @@ def _get_optimizer(config, net):
 def _run_train_loop(data_loader, config, net,
                     loss_dict, optimizer, evaluate_func,
                     lr_scheduler, **kwargs):
-    gan_params = config["gan_params"] 
+    gan_params = config["gan_params"]
     use_tri_loss = "tri_loss" in loss_dict
     unlabel_buffer = None
     logging.info("Using loss: %s" %loss_dict.keys())
@@ -85,13 +85,13 @@ def _run_train_loop(data_loader, config, net,
     lr_scheduler.step()
     for param_group in optimizer.param_groups:
         logging.info("current lr: %s" % param_group['lr'])
-    
+
     if kwargs.has_key("netG") and \
         config["asoftmax_params"].get("unlabel_fold", 0) > 0:
-        unlabel_bs = config["batch_size"] 
+        unlabel_bs = config["batch_size"]
         unlabel_size = config["asoftmax_params"]["unlabel_fold"] * unlabel_bs
         unlabel_buffer = torch.randn(config["model_params"]["feature_dim"],
-                unlabel_size).cuda()          
+                unlabel_size).cuda()
         current_fold = 0
 
     if False and use_tri_loss and config["batch_sampling_params"]["class_balanced"]:
@@ -115,7 +115,7 @@ def _run_train_loop(data_loader, config, net,
                 for param_group in optimizer.param_groups:
                     logging.info("current lr: %s" % param_group['lr'])
             data_loader_iter = iter(data_loader)
-         
+
             for step in range(len(data_loader)):
                 iter_start_time = time.time()
                 images, labels = data_loader_iter.next()
@@ -136,11 +136,11 @@ def _run_train_loop(data_loader, config, net,
                 )
             tri_epoch += 1
     else:
-        # Gan preheating 
+        # Gan preheating
         if kwargs.has_key("netG"):
             gan_loader = kwargs["gan_loader"]
             for epoch in range(config["gan_params"]["preheating"]):
-                data_loader_iter_gan = iter(gan_loader) 
+                data_loader_iter_gan = iter(gan_loader)
                 for step in range(len(gan_loader)):
                     images, labels = data_loader_iter_gan.next()
                     if kwargs.has_key("netG"):
@@ -155,13 +155,13 @@ def _run_train_loop(data_loader, config, net,
                             loss=kwargs["loss_gan"],
                             optimizerD=kwargs["optimizerD"],
                             optimizerG=kwargs["optimizerG"]
-                        )   
+                        )
                 if epoch > 0 and epoch % 10 == 0:
                     model_utils.save_and_evaluate(kwargs["netG"], config, None,
                             model_name="netG.pth")
-                    model_utils.save_and_evaluate(kwargs["netD"], config, None, 
+                    model_utils.save_and_evaluate(kwargs["netD"], config, None,
                             model_name="netD.pth")
-        
+
         # main train loop
         for epoch in range(config["epochs"]+config["lr"]["warmup_epoch"] +
                 1000000):
@@ -177,11 +177,11 @@ def _run_train_loop(data_loader, config, net,
                 for param_group in optimizer.param_groups:
                     logging.info("current lr: %s" % param_group['lr'])
 
-            
+
             # gan trainging
             if kwargs.has_key("netG") and gan_params.get("alone_train", False):
                 for i in range(gan_params.get("train_loop", 3)):
-                    data_loader_iter_gan = iter(gan_loader) 
+                    data_loader_iter_gan = iter(gan_loader)
                     for step in range(len(gan_loader)):
                         images, labels = data_loader_iter_gan.next()
                         run_iter_gan(
@@ -198,13 +198,13 @@ def _run_train_loop(data_loader, config, net,
                             net=net,
                             loss_dict=loss_dict,
                             optimizer=optimizer
-                        )   
+                        )
                 if epoch > 0 and epoch % 10 == 0:
                     model_utils.save_and_evaluate(kwargs["netG"], config, None,
                             model_name="netG.pth")
-                    model_utils.save_and_evaluate(kwargs["netD"], config, None, 
+                    model_utils.save_and_evaluate(kwargs["netD"], config, None,
                             model_name="netD.pth")
-            
+
             # train without update reid model
             if gan_params.get("only_train", False):
                 continue
@@ -219,20 +219,20 @@ def _run_train_loop(data_loader, config, net,
                 iter_start_time = time.time()
                 images, labels = data_loader_iter.next()
                 io_finished_time = time.time()
-                
+
                 # generate unlabel feature
                 if unlabel_buffer is not None and \
                     config["global_step"] % \
                     config["asoftmax_params"]["unlabel_update"] == 0:
                     b_size = config["batch_size"]
-                    noise = torch.randn(b_size, gan_params["input_dim"]).cuda()           
+                    noise = torch.randn(b_size, gan_params["input_dim"]).cuda()
                     noise_norm = noise.pow(2).sum(1).pow(0.5).view(-1, 1)
                     noise = noise / noise_norm.view(-1, 1)
                     fake = kwargs["netG"](noise)
                     if len(config["parallels"]) > 1:
                         weight_mean = net.module.classifier.weight.pow(2).sum(1).mean()
                     else:
-                        weight_mean = net.classifier.weight.pow(2).sum(1).mean()    
+                        weight_mean = net.classifier.weight.pow(2).sum(1).mean()
                     net.eval()
                     feature = net(fake, return_feature=True)
                     net.train()
@@ -242,7 +242,7 @@ def _run_train_loop(data_loader, config, net,
                     end = (current_fold + 1) * unlabel_bs
                     feature = feature / feature_norm * weight_mean * 0.4
                     unlabel_buffer[:, start: end] = feature.data
-                    current_fold = current_fold + 1 
+                    current_fold = current_fold + 1
                     if current_fold == config["asoftmax_params"]["unlabel_fold"]:
                         current_fold = 0
 
@@ -258,7 +258,7 @@ def _run_train_loop(data_loader, config, net,
                     evaluate_func=evaluate_func,
                     iter_start_time=iter_start_time,
                     io_finished_time=io_finished_time,
-                    unlabel_buffer=unlabel_buffer 
+                    unlabel_buffer=unlabel_buffer
                 )
                 """
                 if False and gan_params.get("adv_train", False) and epoch >= 0 \
@@ -268,7 +268,7 @@ def _run_train_loop(data_loader, config, net,
                         label_list.append(labels)
                         feature_list.append(features)
 
-                    else: 
+                    else:
                         run_iter_adv(
                             images=torch.cat(image_list, 0).cuda(),
                             labels=torch.cat(label_list, 0).cuda(),
@@ -298,7 +298,7 @@ def _run_train_loop(data_loader, config, net,
             #if kwargs.has_key("netG"):
             #    model_utils.save_and_evaluate(kwargs["netG"], config, None,
             #            model_name="netG.pth")
-            #    model_utils.save_and_evaluate(kwargs["netD"], config, None, 
+            #    model_utils.save_and_evaluate(kwargs["netD"], config, None,
             #            model_name="netD.pth")
         model_utils.save_and_evaluate(net, config, evaluate_func)
 
@@ -461,10 +461,12 @@ def main():
 
         if config["batch_sampling_params"].get("class_balanced", False):
             for i in range(len(config["lr"]["decay_step"])):
-                config["lr"]["decay_step"][i] *= 10    
-            config["lr"]["warmup_epoch"] *= 10
-            config["evaluation_params"]["epoch"] *= 10
-            config["epochs"] *= 10
+                config["lr"]["decay_step"][i] *= 5
+            config["lr"]["warmup_epoch"] *= 5
+            config["evaluation_params"]["epoch"] *= 5
+            config["epochs"] *= 5
+        config["st_mean"] = 0
+        config["acc"] = 0
 
         # Start training
         train(config, data_loader, gan_loader)

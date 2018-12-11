@@ -52,7 +52,7 @@ class ft_net(nn.Module):
 
         # Embedding layer
         num_ftrs = model_ft.num_ftrs
-        self.feature_g_dim = config["model_params"]["feature_gobal_dim"]
+        self.feature_g_dim = config["model_params"].get("feature_gobal_dim", 0)
         feature_g_dim = self.feature_g_dim
         if self.feature_g_dim > 0:
             self.fc_g = nn.Sequential(
@@ -150,19 +150,46 @@ class ft_net(nn.Module):
         # Return only the embedding in model deploy
         if self.losses == {"tri_loss"} or (not self.training) or labels is None:
             return embedding
-        elif self.losses == {"xent_loss", "tri_loss"}:
-            # Return both the embedding and logits if training with joint loss
-            return embedding, self.classifier(embedding)
         else:
-            # Otherwise return only the logits
-            if self.config["asoftmax_params"]["margin"] == 0:
-                if return_feature:
-                    return embedding, self.classifier(embedding)
-                else:
-                    return self.classifier(embedding)
+            if self.config["model_params"]["spectral_trans"] > 0:
+                logits = [self.classifier(embedding),
+                        self.classifier(spectrual_transform(embedding,
+                                                            self.config["model_params"]["spectral_trans"],
+                                                            self.config))]
             else:
-                if return_feature:
-                    return embedding, self.classifier(embedding, labels,
-                            update_unlabel)
+                logits = [self.classifier(embedding)]
+
+            if self.losses == {"xent_loss", "tri_loss"}:
+                # Return both the embedding and logits if training with joint loss
+                return embedding, logits
+            else:
+                # Otherwise return only the logits
+                if self.config["asoftmax_params"]["margin"] == 0:
+                    if return_feature:
+                        return embedding, logits
+                    else:
+                        return logits
                 else:
-                    return self.classifier(embedding, labels, update_unlabel)
+                    if return_feature:
+                        return embedding, logits
+                    else:
+                        return logits
+
+
+def spectrual_transform(feature, temp, config):
+    # feature shape: 32 * 256
+    if config["acc"] < 0.9:
+        config["st_mean"] = 0
+        return feature
+    feature_norm = feature.pow(2).sum(1).pow(0.5)
+    feature_n = feature / feature_norm.view(-1, 1)
+    w = torch.mm(feature_n, torch.transpose(feature_n, 0 ,1)) / temp
+    config["affinity"] = w.cpu().data.numpy()
+    #w = torch.exp(w)
+    w = w - torch.max(w)
+    dist = F.softmax(w, 0)
+    #dist = torch.ones(32).cuda()
+    #dist = torch.diag(dist)
+    dia_dist = torch.diag(dist, 0)
+    config["st_mean"] = torch.mean(dia_dist)
+    return torch.mm(dist, feature)

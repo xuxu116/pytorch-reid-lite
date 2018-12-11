@@ -1,5 +1,6 @@
 from __future__ import division
 
+import pickle
 import time
 import logging
 import torch
@@ -12,29 +13,26 @@ from nets import layers
 from nets.dcgan import calc_gradient_penalty
 
 def _get_xent_loss(config, criterion, outputs, labels, epoch=0):
-    if config["model_params"].get("pcb_n_parts", 0) == 0:
-        loss = criterion(outputs, labels).mean()
-    else:
-        # random erase several branchs
-        drop_b = config["model_params"].get("random_drop_branchs", 0)
-        if drop_b > 0:
-            n_parts = len(outputs)
-            branch_list = range(n_parts)
-            drop_n = np.random.randint(0, high=n_parts, size=1)[0]
-            erase = np.random.randint(0, high=n_parts, size=drop_b)
-            selected = set(branch_list) - set(erase)
-            if len(selected) == 0:
-                selected = [np.random.randint(0, high=n_parts, size=1)[0]]
-            outputs = [outputs[i] for i in selected]
-        loss = [criterion(output, labels) for output in outputs]
+    # random erase several branchs
+    drop_b = config["model_params"].get("random_drop_branchs", 0)
+    if drop_b > 0:
+        n_parts = len(outputs)
+        branch_list = range(n_parts)
+        drop_n = np.random.randint(0, high=n_parts, size=1)[0]
+        erase = np.random.randint(0, high=n_parts, size=drop_b)
+        selected = set(branch_list) - set(erase)
+        if len(selected) == 0:
+            selected = [np.random.randint(0, high=n_parts, size=1)[0]]
+        outputs = [outputs[i] for i in selected]
+    loss = [criterion(output, labels) for output in outputs]
 
-        update_max = False
-        if update_max and epoch > 20:
-            loss_val = [i.item() for i in loss]
-            max_idx = loss.index(max(loss_val))
-            loss = loss[max_idx]
-        else:
-            loss = sum(loss)
+    update_max = False
+    if update_max and epoch > 20:
+        loss_val = [i.item() for i in loss]
+        max_idx = loss.index(max(loss_val))
+        loss = loss[max_idx]
+    else:
+        loss = sum(loss)
 
 
     return loss
@@ -45,19 +43,12 @@ def _compute_batch_acc(config, outputs, labels, step=None, class_balanced=False)
     #batch_size = config["batch_size"] \
     #    if not class_balanced \
     #    else batch_params["P"] * batch_params["K"]
-    if config["model_params"].get("pcb_n_parts", 0) == 0:
-        batch_size = outputs.shape[0]
-    else:
-        batch_size = outputs[0].shape[0]
-    if config["model_params"].get("pcb_n_parts", 0) == 0:
-        _, preds = torch.max(outputs.data, 1)
-        batch_acc = torch.sum(preds == labels).item() / batch_size
-    else:
-        batch_acc = 0
-        for output in outputs:
-            _, preds = torch.max(output.data, 1)
-            batch_acc += torch.sum(preds == labels).item() / batch_size
-        batch_acc /= len(outputs)
+    batch_size = outputs[0].shape[0]
+    batch_acc = 0
+    for output in outputs:
+        _, preds = torch.max(output.data, 1)
+        batch_acc += torch.sum(preds == labels).item() / batch_size
+    batch_acc /= len(outputs)
 
     return batch_acc
 
@@ -296,14 +287,15 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
     # Forward and backward
     optimizer.zero_grad()
     feature = None
+    config['epoch'] = epoch
     if config["model_params"]["pcb_n_parts"] > 0:
         (feature, outputs), logit_g, feature_g = net(images, labels=labels, return_feature=True)
         outputs.append(logit_g)
     else:
         feature, outputs = net(images, labels=labels, return_feature=True)
-    if unlabel_buffer is not None:
-        logit_un = feature.mm(unlabel_buffer) + net.classifier.bias.mean()
-        outputs = torch.cat([outputs, logit_un], 1)
+    #if unlabel_buffer is not None:
+    #    logit_un = feature.mm(unlabel_buffer) + net.classifier.bias.mean()
+    #    outputs = torch.cat([outputs, logit_un], 1)
 
     loss_cls = 0
     loss_tri = 0
@@ -351,12 +343,14 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
         example_per_second = config["batch_size"] / (gpu_time + io_time)
         io_percentage = io_time / (gpu_time + io_time)
         batch_acc = _compute_batch_acc(config, outputs, labels, step)
+        config["acc"] = batch_acc
 
         logging.info(
             "epoch [%.3d] iter = %d loss_cls = %.4f loss_tri = %.4f acc = %.5f example/sec = %.3f, "
+            "st_mean: %.3f "
             "io_percentage = %.3f" %
             (epoch, step, loss_cls, loss_tri, batch_acc, example_per_second,
-             io_percentage)
+             config["st_mean"], io_percentage)
         )
 
         # Write summary
@@ -367,6 +361,8 @@ def run_iter_softmax(images, labels, step, epoch, config, net, loss_dict,
         config["tensorboard_writer"].add_scalar("batch_accuray",
                                                 batch_acc,
                                                 config["global_step"])
+        #with open("/home/xulie/pytorch-reid/temp.pkl", "w") as f:
+        #    pickle.dump([config["affinity"], labels.cpu().data.numpy()], f)
 
     if step > 0 and step % 1000 == 0:
         save_and_evaluate(net, config, None)
@@ -464,7 +460,8 @@ def run_iter_triplet_loss(images, labels, config, net, loss_dict,
 
 def get_loss_dict(config):
     use_tri_loss = config["tri_loss_params"]["margin"] > 0 and \
-            config["batch_sampling_params"]["class_balanced"]
+            config["batch_sampling_params"]["class_balanced"] and \
+            config["tri_loss_params"]["lambda_tri"] > 0
     loss_dict = {}
     if use_tri_loss:
         logging.info("Using Triplet Loss: %s" % config["tri_loss_params"])

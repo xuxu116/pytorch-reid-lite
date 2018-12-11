@@ -8,7 +8,7 @@
     },
     "batch_sampling_params": {
         "K": 2,
-        "P": 32,
+        "P": 4,
         "batch_size":64,
         "class_balanced": true,
         "softmax_only":false
@@ -50,6 +50,7 @@
         "pcb_n_parts": 6,
         "random_drop_branchs": 6,
         "last_conv_stride": 1,
+        "spectral_trans": 0.3,
         "feature_mask": false,
         "feature_gobal_dim": 256
     },
@@ -70,15 +71,15 @@
     "num_preprocess_workers": 8,
     "optimizer": "sgd",
     "parallels": [
-       0
+       4
     ],
     "pretrain_snapshot": "",
     "tri_loss_params": {
-        "margin": 0.16,
+        "margin": 0,
         "use_adaptive_weight": false,
         "lambda_tri": 1,
         "lambda_cls": 1
     }, 
     "weight_decay": 5e-4,
-    "working_dir": ""
+    "working_dir": "/world/data-gpu-112/xulie/pytorch-output/"
 }

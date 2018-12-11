@@ -47,8 +47,8 @@ class MarginInnerProduct(nn.Module):
         w_norm = w.pow(2).sum(0).pow(0.5)
         x_mean = x_norm.mean()
         w_mean = w_norm.mean()
-        #self.weight.data = w / w_norm 
-        
+        #self.weight.data = w / w_norm
+
         """
         if update_unlabel:
             unlabel_f = torch.transpose(x, 0, 1)
@@ -56,10 +56,10 @@ class MarginInnerProduct(nn.Module):
             start = self.current_fold * self.unlabel_bs
             end = (self.current_fold + 1) * self.unlabel_bs
             self.unlabel_weight.data[:, start: end] = unlabel_f / f_norm
-            self.current_fold = self.current_fold + 1 
+            self.current_fold = self.current_fold + 1
             if self.current_fold == self.config["asoftmax_params"]["unlabel_fold"]:
                     self.current_fold = 0
-            return 
+            return
         if self.unlabel_weight is not None:
             logit_un = x.mm(self.unlabel_weight)
         """
@@ -87,7 +87,7 @@ class MarginInnerProduct(nn.Module):
             output = x.mm(w) / w_norm
             output[index] -= output[index]
             output[index] += cos_theta_margin[index]
-        else: 
+        else:
             output = cos_theta * 1.0
             output[index] -= cos_theta[index]
             output[index] += cos_theta_margin[index]
@@ -143,7 +143,7 @@ class Pcb(nn.Module):
                 import logging
                 logging.info("Using angle loss:%s" %
                             config["asoftmax_params"])
-                                             
+
                 self.classifier=nn.ModuleList(
                         [MarginInnerProduct(
                         config, feature_dim,
@@ -156,12 +156,12 @@ class Pcb(nn.Module):
         x_global = []   # store the concated feature
         y_split = []
         if self.feature_mask:
-            mask = F.avg_pool2d(x, kernel_size=x.size()[2:])  
+            mask = F.avg_pool2d(x, kernel_size=x.size()[2:])
             mask = mask.view(mask.size(0), -1)
             mask = self.mask(mask)
-        else: 
+        else:
             mask = 1
-            
+
         for i in range(self.num_part):
             x_temp_r = F.adaptive_max_pool2d(feature_erasing(x_split[i], 0.0,
                 self.training), (1, 1))
@@ -249,7 +249,7 @@ def feature_erasing(feature, ratio=0.5, is_training=True):
     n, c, h, w = feature.shape
     mask = torch.ones_like(feature)
     era_h = int(ratio * h)
-    rand_h = np.random.randint(0, high=(h-era_h), size=1)[0] 
+    rand_h = np.random.randint(0, high=(h-era_h), size=1)[0]
     mask[:,:,rand_h:rand_h + era_h, : ] = 0
     feature = feature * mask
     return feature
