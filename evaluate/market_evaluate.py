@@ -7,6 +7,8 @@ import sys
 import numpy as np
 import cv2
 import os
+import pickle
+import time
 
 
 def _extract_feature(model, dataloaders, using_onnx):
@@ -45,12 +47,37 @@ def _get_id(img_path):
     return camera_id, labels
 
 
-def _evaluate(qf, ql, qc, gf, gl, gc):
+def _softmax(x):
+        """Compute softmax values for each sets of scores in x."""
+        e_x = np.exp(x - np.max(x, axis=1).reshape(-1, 1))
+        return e_x / e_x.sum(axis=1).reshape(-1, 1)
+
+
+def _feature_refine(feature, temper):
+    w = np.dot(feature, np.transpose(feature)) / temper
+    #w = np.exp(w)
+    w = _softmax(w)
+    return np.dot(w, feature)
+
+def _evaluate(qf, ql, qc, gf, gl, gc, temper=0):
+    '''
+    qf: query feature
+    ql: query label
+    qc: query camera
+    '''
     query = qf
     score = np.dot(gf, query)
     # predict index
     index = np.argsort(score)  # from small to large
     index = index[::-1]
+    if temper > 0:
+        feature_to_refine = gf[index[:50], :]
+        feature_to_refine = _feature_refine(feature_to_refine, temper)
+        score = np.dot(feature_to_refine, query)
+        index_r = np.argsort(score)
+        index_r = index_r[::-1]
+        index[:50] = index[:50][index_r]
+
     # index = index[0:2000]
     # good index
     query_index = np.argwhere(gl == ql)
@@ -143,6 +170,7 @@ class MarketDataLoader(object):
 
 
 def run_eval(config):
+    feature_path = config.get("feature_path", "")
     using_onnx = config.get("model_path", "").endswith("onnx")
     if using_onnx:
         # initialize model
@@ -154,11 +182,13 @@ def run_eval(config):
         input_h = model.input_size[1]
         batch_size = model.batch_size
     else:
-        model = config["online_net"]
-        aug_params = config["data_augmentation"]
-        if aug_params.get("crop_h", 0) > 0 and aug_params.get("crop_w", 0) > 0:
-            input_w = aug_params["crop_w"]
-            input_h = aug_params["crop_h"]
+        if feature_path == "" or not os.path.exists(feature_path):
+            model = config["online_net"]
+        if config.has_key("data_augmentation"):
+            aug_params = config["data_augmentation"]
+            if aug_params.get("crop_h", 0) > 0 and aug_params.get("crop_w", 0) > 0:
+                input_w = aug_params["crop_w"]
+                input_h = aug_params["crop_h"]
         else:
             input_w = config["img_w"]
             input_h = config["img_h"]
@@ -178,13 +208,21 @@ def run_eval(config):
     gallery_cam, gallery_label = _get_id(gallery_path)
     query_cam, query_label = _get_id(query_path)
 
-    # Extract feature
-    logging.info("[MARKET_EVAL] Start extracting gallery feature.")
-    gallery_feature = _extract_feature(model, dataloaders["gallery"],
-                                       using_onnx=using_onnx)
-    logging.info("[MARKET_EVAL] Start extracting query feature.")
-    query_feature = _extract_feature(model, dataloaders["query"],
-                                     using_onnx=using_onnx)
+    if feature_path != "" and os.path.exists(feature_path):
+        with open(feature_path, 'r') as f:
+            gallery_feature, query_feature = pickle.load(f)
+    else:
+        # Extract feature
+        logging.info("[MARKET_EVAL] Start extracting gallery feature.")
+        gallery_feature = _extract_feature(model, dataloaders["gallery"],
+                                        using_onnx=using_onnx)
+        logging.info("[MARKET_EVAL] Start extracting query feature.")
+        query_feature = _extract_feature(model, dataloaders["query"],
+                                        using_onnx=using_onnx)
+        if feature_path != "":
+            with open(feature_path, 'w') as f:
+                pickle.dump((gallery_feature, query_feature), f)
+            logging.info("[MARKET_EVAL] Feature saved")
 
     # Run evaluation
     logging.info("[MARKET_EVAL] Start evaluation......")
@@ -195,7 +233,9 @@ def run_eval(config):
 
     CMC = np.zeros(len(gallery_label), dtype=int)
     ap = 0.0
+    temper = config.get("spectral_transform", 0)
 
+    start = time.time()
     for i in range(len(query_label)):
         ap_tmp, CMC_tmp = _evaluate(
             query_feature[i],
@@ -203,18 +243,20 @@ def run_eval(config):
             query_cam[i],
             gallery_feature,
             gallery_label,
-            gallery_cam
+            gallery_cam,
+            temper
         )
 
         if CMC_tmp[0] == -1:
             continue
         CMC = CMC + CMC_tmp
         ap += ap_tmp
+    end = time.time()
 
     CMC = CMC.astype(float)
     CMC = CMC / len(query_label)  # average CMC
-    logging.info("[MARKET_EVAL] top1: %f top5: %f top10: %f mAP: %f" %
-                 (CMC[0], CMC[4], CMC[9], ap / len(query_label)))
+    logging.info("[MARKET_EVAL] top1: %f top5: %f top10: %f mAP: %f; %.2fs" %
+                 (CMC[0], CMC[4], CMC[9], ap / len(query_label), end-start))
     return CMC[0]
 
 
