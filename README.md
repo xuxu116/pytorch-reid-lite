@@ -3,9 +3,13 @@
 This codebase is for training/deploying models in pytorch (onnx), 
 currently it provides basic protocols for model training, evaluation and deploying.
 
-## What's New
+## Features
 
-Add warm-up
+- Spectral feature transform for post-processing(https://arxiv.org/abs/1811.11405).
+- PCB structure (https://arxiv.org/abs/1711.09349); Improved training strategy
+- GAN related person generator(unstable)
+- AM softmax & triplet loss
+- step-wise LR warm-up
 
 ## Install Dependency
 
