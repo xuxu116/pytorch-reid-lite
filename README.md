@@ -5,7 +5,7 @@ currently it provides basic protocols for model training, evaluation and deployi
 
 ## Features
 
-- Spectral feature transform(rank1: 0.945071|map: 0.827155 w\o post-processing)(https://arxiv.org/abs/1811.11405).
+- Spectral feature transform (rank1: 0.945071, map: 0.827155 w\o post-processing). (https://arxiv.org/abs/1811.11405).
 - PCB structure (https://arxiv.org/abs/1711.09349); Improved training strategy
 - GAN related person generator(unstable)
 - AM softmax & triplet loss
