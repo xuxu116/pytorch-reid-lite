@@ -147,6 +147,7 @@ resnet-50 | 256*128 |256*1 |0.907660|0.763313|mirro,RE | 32*1 | warm-up before 2
 resnet-50 | 256*128 |256*1 |0.923100|0.782874|mirro,RE | 8*4 | 700+ epochs
 resnet-50 | 256*128 |256*1 |0.931116|0.819774|mirro,RE | 8*4 |pad_zero_crop, no dropout
 resnet-50 | 256*128 |256*1 |0.945071|0.827155|mirro,RE | 8*4 | st0.3, fine-tuned
+resnet-50 | 256*128 |256*1 |0.948931|0.873448|mirro,RE | 8*4 | st0.3, post-proce 0.5/top50
 resnet-50 | 256*128 |256*1 |0.900831|0.774981|mirro,RE | 16*8 | spectral st_0.5_norm, pad_6
 resnet-50 | 256*128 |256*1 |0.922506|0.811486|mirro,RE | 8*4 | tri_m=0.16, pad_6
 resnet-50 | 256*128 |256*1 |0.921912|0.801184|mirro,RE | 16*2 | tri_m=0.16, pad_6
