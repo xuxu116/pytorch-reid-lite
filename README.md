@@ -5,6 +5,7 @@ currently it provides basic protocols for model training, evaluation and deployi
 
 ## Features
 
+- Distillation. Rank1:0.942993/map:0.831319 taught by resnet-101 model
 - Spectral feature transform (rank1: 0.945071, map: 0.827155 w\o post-processing). (https://arxiv.org/abs/1811.11405).
 - PCB structure (https://arxiv.org/abs/1711.09349); Improved training strategy
 - GAN related person generator(unstable)
